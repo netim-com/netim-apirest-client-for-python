@@ -476,6 +476,18 @@ class APIRest:
             "ipv6": ipv6,
         }
         return self.call("host/", "post", params)
+    
+    def hostInfo(self, host: str) -> dict:
+        """Returns all informations about a host object
+
+        Args:
+            host (str): Name of the host to be queried
+
+        Returns:
+            Host informations
+        """
+
+        return self.call("host/" + host, "get")
 
     def hostDelete(self, host: str) -> dict:
         """Deletes an Host at the registry
