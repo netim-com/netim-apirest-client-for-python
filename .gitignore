@@ -2,3 +2,4 @@
 __pycache__/APIRest.cpython-311.pyc
 __pycache__/NetimAPIException.cpython-311.pyc
 tests.py
+conf.xml

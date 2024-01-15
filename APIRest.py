@@ -1225,11 +1225,11 @@ class APIRest:
         domain = domain.lower()
         return self.call("/domain/" + domain + "/claim/", "get")
 
-    def queryDomainList(self, filter: str) -> list:
-        """Returns all domains linked to the reseller account.
+    def domainList(self, filters: dict) -> list:
+        """Returns a list of domains matching the filters
 
         Args:
-            filter (str): Domain name filter
+            filters (dict): Domain list filters
 
         Throws:
             NetimAPIException
@@ -1238,9 +1238,15 @@ class APIRest:
             StructDomainList[]: An array of StructDomainList
 
         See:
-            queryDomainList API http://support.netim.com/en/wiki/QueryDomainList
+            domainList API http://support.netim.com/en/wiki/domainList
         """
-        return self.call("/domains/" + filter, "get")
+        
+        try:
+            params = {"filters": filters}
+            return self.call("/domains/", "post", params)
+
+        except Exception as e:
+            print(f"Unexpected Exception: {e}")
 
     def domainZoneInit(self, domain: str, numTemplate: int) -> dict:
         """Resets all DNS settings from a template
