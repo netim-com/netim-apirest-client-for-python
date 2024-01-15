@@ -432,7 +432,7 @@ class APIRest:
         """
         return self.call("operations/pending/", "get")
 
-    def queryContactList(self, filter: str = "", field: str = "") -> list:
+    def contactList(self, filters: dict) -> list:
         """Returns all contacts linked to the reseller account.
 
         Args:
@@ -446,12 +446,11 @@ class APIRest:
             NetimAPIException
 
         See:
-            queryContactList API https://support.netim.com/en/wiki/QueryContactList
+            contactList API https://support.netim.com/en/wiki/contactList
         """
-        if not filter and not field:
-            return self.call("contacts/", "get")
-        else:
-            return self.call("contacts/" + field + "/" + filter + "/", "get")
+
+        params = {"filters": filters}
+        return self.call("contacts/", "post", params)
 
     def hostCreate(self, host: str, ipv4: list, ipv6: list) -> dict:
         """Creates a new host at the registry
