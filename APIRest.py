@@ -141,7 +141,7 @@ class APIRest:
                     self.__apiURL + "/session",
                     auth=(self.__userID, self.__secret),
                     headers=headers,
-                    data=json.dumps({'preferences': self.__preferences}),
+                    data=json.dumps({"preferences": self.__preferences}),
                 )
             else:
                 headers = {
@@ -476,7 +476,7 @@ class APIRest:
             "ipv6": ipv6,
         }
         return self.call("host/", "post", params)
-    
+
     def hostInfo(self, host: str) -> dict:
         """Returns all informations about a host object
 
@@ -529,11 +529,11 @@ class APIRest:
         }
         return self.call("host/" + host, "patch", params)
 
-    def queryHostList(self, filter: str) -> list:
+    def hostList(self, filters: dict) -> list:
         """Returns all hosts linked to the reseller account.
 
         Args:
-            filter (str): The filter applies onto the host name
+            filters (dict): The filter applies onto the host name
 
         Returns:
             StructHostList[]: a list of StructHostList
@@ -542,9 +542,11 @@ class APIRest:
             NetimAPIException
 
         See:
-            queryHostList API http://support.netim.com/en/wiki/QueryHostList
+            hostList API http://support.netim.com/en/wiki/hostList
         """
-        return self.call("hosts/" + filter, "get")
+
+        params = {"filters": filters}
+        return self.call("hosts/", "post", params)
 
     def domainCheck(self, domain: str) -> list:
         """Checks if domain names are available for registration
@@ -1252,7 +1254,7 @@ class APIRest:
         See:
             domainList API http://support.netim.com/en/wiki/domainList
         """
-        
+
         params = {"filters": filters}
         return self.call("/domains/", "post", params)
 
