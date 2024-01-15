@@ -1241,12 +1241,8 @@ class APIRest:
             domainList API http://support.netim.com/en/wiki/domainList
         """
         
-        try:
-            params = {"filters": filters}
-            return self.call("/domains/", "post", params)
-
-        except Exception as e:
-            print(f"Unexpected Exception: {e}")
+        params = {"filters": filters}
+        return self.call("/domains/", "post", params)
 
     def domainZoneInit(self, domain: str, numTemplate: int) -> dict:
         """Resets all DNS settings from a template
