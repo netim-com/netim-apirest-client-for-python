@@ -2,6 +2,8 @@
 <configuration>
     <url>http://oterest.netim.com/1.0/</url>
     <login>login</login>
-    <secret>secret</secret>
-    <language>EN</language>
+    <secret>q2cp$secret</secret>
+    <preferences>
+		<lang>EN</lang>
+	</preferences>
 </configuration>

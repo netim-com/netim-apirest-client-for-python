@@ -6,10 +6,10 @@ import requests
 import atexit
 from lxml import etree
 import os
-from apirest.NetimAPIException import *
+from NetimAPIException import *
 
 
-class APIRest():
+class APIRest:
     """Constructor for class APIRest
 
     Args:
@@ -17,13 +17,14 @@ class APIRest():
         secret (str): the SECRET the client uses to connect to his NETIM account.
 
     """
+
     __connected = False
     __sessionID = None
 
     __userID = None
     __secret = None
     __apiURL = None
-    __defaultLanguage = None
+    __preferences = {"lang": None}
 
     __lastRequestParams = None
     __lastRequestRessource = None
@@ -33,47 +34,57 @@ class APIRest():
     __lastError = None
 
     def __init__(self, userID: str = None, secret: str = None):
-
         atexit.register(self.__del__)
 
-        xml = etree.parse(os.path.dirname(
-            os.path.abspath(__file__))+"/conf.xml")
+        xml = etree.parse(os.path.dirname(os.path.abspath(__file__)) + "/conf.xml")
         try:
-            if(userID is None and secret is None):  # No parameters
-                if(xml.xpath("/configuration/login")[0].text != "" and xml.xpath("/configuration/secret")[0].text != ""):
+            if userID is None and secret is None:  # No parameters
+                if (
+                    xml.xpath("/configuration/login")[0].text != ""
+                    and xml.xpath("/configuration/secret")[0].text != ""
+                ):
                     self.__userID = xml.xpath("/configuration/login")[0].text
                     self.__secret = xml.xpath("/configuration/secret")[0].text
                 else:
-                    raise NetimAPIException(
-                        "Missing login/secret in conf file.")
-            elif(userID is not None and secret is not None):  # With parameters
+                    raise NetimAPIException("Missing login/secret in conf file.")
+            elif userID is not None and secret is not None:  # With parameters
                 self.__userID = userID
                 self.__secret = secret
             else:
                 raise NetimAPIException("Missing login/secret.")
 
-            if(xml.xpath("/configuration/url")[0].text != ""):
+            if xml.xpath("/configuration/url")[0].text != "":
                 self.__apiURL = xml.xpath("/configuration/url")[0].text
             else:
                 raise NetimAPIException("Missing URL in conf file.")
 
-            if(xml.xpath("/configuration/language")[0].text != ""):
-                self.__defaultLanguage = xml.xpath(
-                    "/configuration/language")[0].text
+            perfs = xml.xpath("/configuration/preferences")[0]
+            for item in perfs:
+                if item.text != "":
+                    self.__preferences[item.tag] = item.text
+
+            if self.__preferences["lang"] is None:
+                if xml.xpath("/configuration/preferences/lang")[0].text != "":
+                    self.__preferences["lang"] = xml.xpath(
+                        "/configuration/preferences/lang"
+                    )[0].text
+                else:
+                    self.__preferences["lang"] = "EN"
             else:
-                self.__defaultLanguage = "EN"
+                self.__preferences["lang"] = "EN"
+
         except IndexError:
             raise NetimAPIException("Missing parameter in conf.xml")
 
     def __del__(self):
-        if (self.__connected and self.__sessionID is not None):
+        if self.__connected and self.__sessionID is not None:
             self.sessionClose()
 
     def __isSessionOpen(self, ressource: str, httpVerb: str):
-        return 'session' in ressource and httpVerb == "post"
+        return "session" in ressource and httpVerb == "post"
 
     def __isSessionClose(self, ressource: str, httpVerb: str):
-        return 'session' in ressource and httpVerb == "delete"
+        return "session" in ressource and httpVerb == "delete"
 
     def call(self, ressource: str, httpVerb: str, params: dict = {}):
         """Launches a function of the API, abstracting the connect/disconnect part to one place
@@ -112,26 +123,37 @@ class APIRest():
 
         try:
             # login
-            if (not self.__connected):
+            if not self.__connected:
                 if self.__isSessionClose(ressource, httpVerb):
                     return
                 elif not self.__isSessionOpen(ressource, httpVerb):
                     self.sessionOpen()
-            elif (self.__connected and self.__isSessionOpen(ressource, httpVerb)):
+            elif self.__connected and self.__isSessionOpen(ressource, httpVerb):
                 return
 
             # Call the REST ressource
             if self.__isSessionOpen(ressource, httpVerb):
-                headers = {"Accept-Language": self.__defaultLanguage,
-                           "Content-Type": "application/json"}
+                headers = {
+                    "Accept-Language": self.__preferences["lang"],
+                    "Content-Type": "application/json",
+                }
                 response = requests.post(
-                    self.__apiURL + '/session', auth=(self.__userID, self.__secret), headers=headers)
+                    self.__apiURL + "/session",
+                    auth=(self.__userID, self.__secret),
+                    headers=headers,
+                    data=json.dumps({'preferences': self.__preferences}),
+                )
             else:
-                headers = {"Authorization": "Bearer " +
-                           self.__sessionID, "Content-type": "application/json"}
+                headers = {
+                    "Authorization": "Bearer " + self.__sessionID,
+                    "Content-type": "application/json",
+                }
                 function = getattr(requests, httpVerb)
                 response = function(
-                    self.__apiURL + "/" + ressource, headers=headers, data=json.dumps(params))
+                    self.__apiURL + "/" + ressource,
+                    headers=headers,
+                    data=json.dumps(params),
+                )
             self.__lastHttpStatus = response.status_code
 
             try:
@@ -145,21 +167,20 @@ class APIRest():
                 elif response.status_code == 401:
                     pass
                 else:
-                    raise NetimAPIException(result['message'])
+                    raise NetimAPIException(result["message"])
             elif self.__isSessionOpen(ressource, httpVerb):
-
                 if response.status_code == 200:
-                    self.__sessionID = result['access_token']
+                    self.__sessionID = result["access_token"]
                     self.__connected = True
                 else:
-                    raise NetimAPIException(result['message'])
+                    raise NetimAPIException(result["message"])
             else:
                 # Code doesn't start with "2xx"
-                if(response.status_code < 200 or response.status_code > 299):
-                    if(response.status_code == 401):
+                if response.status_code < 200 or response.status_code > 299:
+                    if response.status_code == 401:
                         self.__connected = False
-                    if 'message' in result:
-                        raise NetimAPIException(result['message'])
+                    if "message" in result:
+                        raise NetimAPIException(result["message"])
                     else:
                         raise NetimAPIException("")
 
@@ -202,11 +223,11 @@ class APIRest():
         Raises:
             NetimAPIException: if failed to connect.
         """
-        self.call('session', 'post')
+        self.call("session", "post")
 
     def sessionClose(self) -> None:
-        if(self.__connected and self.__sessionID is not None):
-            self.call('session', 'delete')
+        if self.__connected and self.__sessionID is not None:
+            self.call("session", "delete")
             if self.__lastHttpStatus != 200:
                 raise NetimAPIException(self.__lastError)
             else:
@@ -226,12 +247,12 @@ class APIRest():
             sessionInfo API https://support.netim.com/en/wiki/SessionInfo
 
         """
-        if (not self.__connected):
+        if not self.__connected:
             raise NetimAPIException("Not connected")
-        return self.call("session/", 'get')
+        return self.call("session/", "get")
 
     def queryAllSessions(self) -> list:
-        """Returns all active sessions linked to the reseller account. 
+        """Returns all active sessions linked to the reseller account.
 
         Returns:
             dict: a dictionary of StructSessionInfo.
@@ -239,22 +260,22 @@ class APIRest():
         See:
             queryAllSessions API https://support.netim.com/en/wiki/QueryAllSessions
         """
-        return self.call('sessions/', 'get')
+        return self.call("sessions/", "get")
 
     def sessionSetPreference(self, type: str, value: str) -> None:
         """Updates the settings of the current session.
 
         Args:
             type (str): Setting to be modified ('lang','sync')
-            value (str): New value of the Setting (lang: 'EN';'FR',sync:'0'(for asynchronous);'1'(for synchronous)). 
+            value (str): New value of the Setting (lang: 'EN';'FR',sync:'0'(for asynchronous);'1'(for synchronous)).
         """
-        self.call('session/', 'patch', {"type": type, "value": value})
+        self.call("session/", "patch", {"type": type, "value": value})
 
     def hello(self) -> str:
         """Returns a welcome message
 
                 Raises:
-            NetimAPIException: 
+            NetimAPIException:
 
         Returns:
             str: string a welcome message
@@ -263,7 +284,7 @@ class APIRest():
             hello API http://support.netim.com/en/wiki/Hello
         """
 
-        return self.call('hello/', 'get')
+        return self.call("hello/", "get")
 
     def queryResellerAccount(self) -> dict:
         """Returns the list of parameters reseller account
@@ -271,7 +292,7 @@ class APIRest():
         Returns:
             str: list of parameters reseller account
         """
-        return self.call('account/', 'get')
+        return self.call("account/", "get")
 
     def contactCreate(self, contact: dict) -> dict:
         """Creates a contact
@@ -287,9 +308,7 @@ class APIRest():
             StructContact: http://support.netim.com/en/wiki/StructContact
         """
 
-        params = {
-            "contact": contact
-        }
+        params = {"contact": contact}
         return self.call("contact/", "post", params)
 
     def contactInfo(self, id: str) -> dict:
@@ -324,13 +343,11 @@ class APIRest():
             contactUpdate API http://support.netim.com/en/wiki/ContactUpdate
         """
 
-        params = {
-            "contact": contact
-        }
+        params = {"contact": contact}
         return self.call("contact/" + id, "patch", params)
 
     def contactDelete(self, id: str) -> dict:
-        """ Deletes a contact object 
+        """Deletes a contact object
 
         Args:
             id (str): ID of the contact to be deleted
@@ -385,7 +402,7 @@ class APIRest():
         self.call("operation/" + id + "/cancel/", "patch")
 
     def queryOpeList(self, tld: str) -> dict:
-        """Returns the status (opened/closed) for all operations for the extension 
+        """Returns the status (opened/closed) for all operations for the extension
 
         Args:
             tld (str): Extension (uppercase without dot)
@@ -402,10 +419,10 @@ class APIRest():
         return self.call("tld/" + tld + "/operations/", "get")
 
     def queryOpePending(self) -> list:
-        """Returns the list of pending operations processing 
+        """Returns the list of pending operations processing
 
         Returns:
-            StructQueryOpePending[]: the list of pending operations processing 
+            StructQueryOpePending[]: the list of pending operations processing
 
         Throws:
             NetimAPIException
@@ -419,8 +436,8 @@ class APIRest():
         """Returns all contacts linked to the reseller account.
 
         Args:
-            filter (str): The filter applies on the "field" 
-            field (str): idContact / firstName / lastName / bodyForm / isOwner 
+            filter (str): The filter applies on the "field"
+            field (str): idContact / firstName / lastName / bodyForm / isOwner
 
         Returns:
             StructContactList[]: An array of StructContactList
@@ -431,7 +448,7 @@ class APIRest():
         See:
             queryContactList API https://support.netim.com/en/wiki/QueryContactList
         """
-        if(not filter and not field):
+        if not filter and not field:
             return self.call("contacts/", "get")
         else:
             return self.call("contacts/" + field + "/" + filter + "/", "get")
@@ -458,10 +475,10 @@ class APIRest():
             "ipv4": ipv4,
             "ipv6": ipv6,
         }
-        return self.call('host/', "post", params)
+        return self.call("host/", "post", params)
 
     def hostDelete(self, host: str) -> dict:
-        """Deletes an Host at the registry 
+        """Deletes an Host at the registry
 
         Args:
             host (str): hostname to be deleted
@@ -478,7 +495,7 @@ class APIRest():
         return self.call("host/" + host, "delete")
 
     def hostUpdate(self, host: str, ipv4: list, ipv6: list) -> dict:
-        """Updates a host at the registry  
+        """Updates a host at the registry
 
         Args:
             host (str): hostname
@@ -501,10 +518,10 @@ class APIRest():
         return self.call("host/" + host, "patch", params)
 
     def queryHostList(self, filter: str) -> list:
-        """Returns all hosts linked to the reseller account. 
+        """Returns all hosts linked to the reseller account.
 
         Args:
-            filter (str): The filter applies onto the host name 
+            filter (str): The filter applies onto the host name
 
         Returns:
             StructHostList[]: a list of StructHostList
@@ -521,13 +538,13 @@ class APIRest():
         """Checks if domain names are available for registration
 
         Args:
-            domain (str): Domain names to be checked 
-                                You can provide several domain names separated with semicolons. 
-                        Caution : 
-                            - you can't mix different extensions during the same call 
+            domain (str): Domain names to be checked
+                                You can provide several domain names separated with semicolons.
+                        Caution :
+                            - you can't mix different extensions during the same call
                             - all the extensions don't accept a multiple checkDomain. See HasMultipleCheck in Category:Tld
         Returns:
-            StructDomainCheckResponse[]: a list of StructDomainCheckResponse 
+            StructDomainCheckResponse[]: a list of StructDomainCheckResponse
         Throws:
             NetimAPIException
         See:
@@ -539,8 +556,22 @@ class APIRest():
 
         return self.call("domain/" + domain + "/check/", "get")
 
-    def domainCreate(self, domain: str, idOwner: str, idAdmin: str, idTech: str, idBilling: str, ns1: str, ns2: str, ns3: str, ns4: str, ns5: str, duration: int, templateDNS: int = None) -> dict:
-        """Requests a new domain registration 
+    def domainCreate(
+        self,
+        domain: str,
+        idOwner: str,
+        idAdmin: str,
+        idTech: str,
+        idBilling: str,
+        ns1: str,
+        ns2: str,
+        ns3: str,
+        ns4: str,
+        ns5: str,
+        duration: int,
+        templateDNS: int = None,
+    ) -> dict:
+        """Requests a new domain registration
 
         Args:
             domain (str): the name of the domain to create
@@ -572,17 +603,15 @@ class APIRest():
             "idAdmin": idAdmin,
             "idTech": idTech,
             "idBilling": idBilling,
-
             "ns1": ns1,
             "ns2": ns2,
             "ns3": ns3,
             "ns4": ns4,
             "ns5": ns5,
-
             "duration": duration,
         }
 
-        if (templateDNS is not None):
+        if templateDNS is not None:
             params["templateDNS"] = templateDNS
 
         return self.call("domain/" + domain + "/", "post", params)
@@ -604,8 +633,22 @@ class APIRest():
 
         return self.call("domain/" + domain + "/info/", "get")
 
-    def domainCreateLP(self, domain: str, idOwner: str, idAdmin: str, idTech: str, idBilling: str, ns1: str, ns2: str, ns3: str, ns4: str, ns5: str, duration: int, launchPhase: str) -> dict:
-        """Requests a new domain registration 
+    def domainCreateLP(
+        self,
+        domain: str,
+        idOwner: str,
+        idAdmin: str,
+        idTech: str,
+        idBilling: str,
+        ns1: str,
+        ns2: str,
+        ns3: str,
+        ns4: str,
+        ns5: str,
+        duration: int,
+        launchPhase: str,
+    ) -> dict:
+        """Requests a new domain registration
 
         Args:
             domain (str): the name of the domain to create
@@ -637,21 +680,19 @@ class APIRest():
             "idAdmin": idAdmin,
             "idTech": idTech,
             "idBilling": idBilling,
-
             "ns1": ns1,
             "ns2": ns2,
             "ns3": ns3,
             "ns4": ns4,
             "ns5": ns5,
-
             "duration": duration,
             "launchPhase": launchPhase,
         }
 
         return self.call("domain/" + domain + "/lp/", "post", params)
 
-    def domainDelete(self, domain: str, typeDelete: str = 'NOW') -> dict:
-        """Deletes immediately a domain name 
+    def domainDelete(self, domain: str, typeDelete: str = "NOW") -> dict:
+        """Deletes immediately a domain name
 
         Args:
             domain (str): the name of the domain to delete
@@ -669,14 +710,25 @@ class APIRest():
 
         domain = domain.lower()
 
-        params = {
-            "typeDelete": typeDelete.upper()
-        }
+        params = {"typeDelete": typeDelete.upper()}
 
         return self.call("domain/" + domain + "/", "delete", params)
 
-    def domainTransferIn(self, domain: str, authID: str, idOwner: str, idAdmin: str, idTech: str, idBilling: str, ns1: str, ns2: str, ns3: str, ns4: str, ns5: str) -> dict:
-        """Requests the transfer of a domain name to Netim 
+    def domainTransferIn(
+        self,
+        domain: str,
+        authID: str,
+        idOwner: str,
+        idAdmin: str,
+        idTech: str,
+        idBilling: str,
+        ns1: str,
+        ns2: str,
+        ns3: str,
+        ns4: str,
+        ns5: str,
+    ) -> dict:
+        """Requests the transfer of a domain name to Netim
 
         Args:
             domain (str): name of the domain to transfer
@@ -709,7 +761,6 @@ class APIRest():
             "idAdmin": idAdmin,
             "idTech": idTech,
             "idBilling": idBilling,
-
             "ns1": ns1,
             "ns2": ns2,
             "ns3": ns3,
@@ -719,8 +770,21 @@ class APIRest():
 
         return self.call("domain/" + domain + "/transfer/", "post", params)
 
-    def domainTransferTrade(self, domain: str, authID: str, idOwner: str, idAdmin: str, idTech: str, idBilling: str, ns1: str, ns2: str, ns3: str, ns4: str, ns5: str) -> dict:
-        """Requests the transfer (with change of domain holder) of a domain name to Netim 
+    def domainTransferTrade(
+        self,
+        domain: str,
+        authID: str,
+        idOwner: str,
+        idAdmin: str,
+        idTech: str,
+        idBilling: str,
+        ns1: str,
+        ns2: str,
+        ns3: str,
+        ns4: str,
+        ns5: str,
+    ) -> dict:
+        """Requests the transfer (with change of domain holder) of a domain name to Netim
 
         Args:
             domain (str): name of the domain to transfer
@@ -753,7 +817,6 @@ class APIRest():
             "idAdmin": idAdmin,
             "idTech": idTech,
             "idBilling": idBilling,
-
             "ns1": ns1,
             "ns2": ns2,
             "ns3": ns3,
@@ -763,8 +826,20 @@ class APIRest():
 
         return self.call("domain/" + domain + "/transfer-trade/", "post", params)
 
-    def domainInternalTransfer(self, domain: str, authID: str, idAdmin: str, idTech: str, idBilling: str, ns1: str, ns2: str, ns3: str, ns4: str, ns5: str) -> dict:
-        """Requests the transfer (with change of domain holder) of a domain name to Netim 
+    def domainInternalTransfer(
+        self,
+        domain: str,
+        authID: str,
+        idAdmin: str,
+        idTech: str,
+        idBilling: str,
+        ns1: str,
+        ns2: str,
+        ns3: str,
+        ns4: str,
+        ns5: str,
+    ) -> dict:
+        """Requests the transfer (with change of domain holder) of a domain name to Netim
 
         Args:
             domain (str): name of the domain to transfer
@@ -794,7 +869,6 @@ class APIRest():
             "idAdmin": idAdmin,
             "idTech": idTech,
             "idBilling": idBilling,
-
             "ns1": ns1,
             "ns2": ns2,
             "ns3": ns3,
@@ -805,7 +879,7 @@ class APIRest():
         return self.call("domain/" + domain + "/internal-transfer/", "patch", params)
 
     def domainRenew(self, domain: str, duration: int) -> dict:
-        """Renew a domain name for a new subscription period 
+        """Renew a domain name for a new subscription period
 
         Args:
             domain (str): the name of the domain to renew
@@ -821,9 +895,7 @@ class APIRest():
             domainRenew API  http://support.netim.com/en/wiki/DomainRenew
         """
         domain = domain.lower()
-        params = {
-            "duration": str(duration)
-        }
+        params = {"duration": str(duration)}
 
         return self.call("domain/" + domain + "/renew/", "patch", params)
 
@@ -851,7 +923,7 @@ class APIRest():
         Args:
             domain (str): name of the domain
             codePref (str): setting to be modified. Accepted value are 'whois_privacy', 'registrar_lock', 'auto_renew', 'tag' or 'note'
-            value (str): new value for the settings. 
+            value (str): new value for the settings.
 
         Throws:
             NetimAPIException
@@ -864,10 +936,7 @@ class APIRest():
         """
         domain = domain.lower()
 
-        params = {
-            "codePref": codePref,
-            "value": value
-        }
+        params = {"codePref": codePref, "value": value}
 
         return self.call("domain/" + domain + "/preference/", "patch", params)
 
@@ -889,14 +958,14 @@ class APIRest():
         """
         domain = domain.lower()
 
-        params = {
-            "idOwner": idOwner
-        }
+        params = {"idOwner": idOwner}
 
         return self.call("domain/" + domain + "/transfer-owner/", "put", params)
 
-    def domainChangeContact(self, domain: str, idAdmin: str, idTech: str, idBilling: str) -> dict:
-        """Replaces the contacts of the domain (administrative, technical, billing) 
+    def domainChangeContact(
+        self, domain: str, idAdmin: str, idTech: str, idBilling: str
+    ) -> dict:
+        """Replaces the contacts of the domain (administrative, technical, billing)
 
         Args:
             domain (str): name of the domain
@@ -915,16 +984,14 @@ class APIRest():
         """
         domain = domain.lower()
 
-        params = {
-            "idAdmin": idAdmin,
-            "idTech": idTech,
-            "idBilling": idBilling
-        }
+        params = {"idAdmin": idAdmin, "idTech": idTech, "idBilling": idBilling}
 
         return self.call("domain/" + domain + "/contacts/", "put", params)
 
-    def domainChangeDNS(self, domain: str, ns1: str, ns2: str, ns3: str, ns4: str, ns5: str) -> dict:
-        """Replaces the DNS servers of the domain (redelegation) 
+    def domainChangeDNS(
+        self, domain: str, ns1: str, ns2: str, ns3: str, ns4: str, ns5: str
+    ) -> dict:
+        """Replaces the DNS servers of the domain (redelegation)
 
         Args:
             domain (str): name of the domain
@@ -945,22 +1012,16 @@ class APIRest():
         """
         domain = domain.lower()
 
-        params = {
-            "ns1": ns1,
-            "ns2": ns2,
-            "ns3": ns3,
-            "ns4": ns4,
-            "ns5": ns5
-        }
+        params = {"ns1": ns1, "ns2": ns2, "ns3": ns3, "ns4": ns4, "ns5": ns5}
 
         return self.call("domain/" + domain + "/dns/", "put", params)
 
     def domainSetDNSSec(self, domain: str, enable: int) -> dict:
-        """Allows to sign a domain name with DNSSEC if it uses NETIM DNS servers 
+        """Allows to sign a domain name with DNSSEC if it uses NETIM DNS servers
 
         Args:
             domain (str): name of the domain
-            enable (int): New signature value 0 : unsign 1 : sign 
+            enable (int): New signature value 0 : unsign 1 : sign
 
         Throws:
             NetimAPIException
@@ -976,7 +1037,7 @@ class APIRest():
         return self.call("domain/" + domain + "/dnssec/", "patch", params)
 
     def domainAuthID(self, domain: str, sendToRegistrant: int) -> dict:
-        """Returns the authorization code to transfer the domain name to another registrar or to another client account 
+        """Returns the authorization code to transfer the domain name to another registrar or to another client account
 
         Args:
             domain (str): name of the domain to get the AuthID
@@ -997,7 +1058,7 @@ class APIRest():
         return self.call("domain/" + domain + "/authid/", "patch", params)
 
     def domainRelease(self, domain: str) -> dict:
-        """Release a domain name (managed by the reseller) to its registrant (who will become a direct customer at Netim) 
+        """Release a domain name (managed by the reseller) to its registrant (who will become a direct customer at Netim)
 
         Args:
             domain (str): domain name to be released
@@ -1017,7 +1078,7 @@ class APIRest():
         return self.call("domain/" + domain + "/release/", "patch")
 
     def domainSetMembership(self, domain: str, token: str) -> dict:
-        """Adds a membership to the domain name 
+        """Adds a membership to the domain name
 
         Args:
             domain (str): name of domain
@@ -1034,9 +1095,7 @@ class APIRest():
         """
         domain = domain.lower()
 
-        params = {
-            "token": token
-        }
+        params = {"token": token}
         return self.call("/domain/" + domain + "/membership/", "patch", params)
 
     def domainTldInfo(self, tld: str) -> dict:
@@ -1056,16 +1115,24 @@ class APIRest():
         """
         return self.call("/tld/" + tld + "/", "get")
 
-    def domainSetDNSSecExt(self, domain: str, DSRecords: list, flags: int, protocol: int, algo: int, pubKey: str) -> dict:
-        """Allows to sign a domain name with DNSSEC if it doesn't use NETIM DNS servers 
+    def domainSetDNSSecExt(
+        self,
+        domain: str,
+        DSRecords: list,
+        flags: int,
+        protocol: int,
+        algo: int,
+        pubKey: str,
+    ) -> dict:
+        """Allows to sign a domain name with DNSSEC if it doesn't use NETIM DNS servers
 
         Args:
             domain (str): name of the domain
-            DSRecords (list): A StructDSRecord object 
-            flags (int): 
-            protocol (int): 
-            algo (int): 
-            pubKey (str): 
+            DSRecords (list): A StructDSRecord object
+            flags (int):
+            protocol (int):
+            algo (int):
+            pubKey (str):
 
         Throws:
             NetimAPIException
@@ -1083,7 +1150,7 @@ class APIRest():
             "flags": flags,
             "protocol": protocol,
             "algo": algo,
-            "pubKey": pubKey
+            "pubKey": pubKey,
         }
 
         return self.call("/domain/" + domain + "/dnssec/", "patch", params)
@@ -1104,7 +1171,7 @@ class APIRest():
         return self.call("/domain/" + domain + "/whois/", "get")
 
     def domainPriceList(self) -> dict:
-        """Returns the list of all prices for each tld 
+        """Returns the list of all prices for each tld
 
         Throws:
             NetimAPIException
@@ -1118,7 +1185,7 @@ class APIRest():
         return self.call("/tlds/price-list/", "get")
 
     def queryDomainPrice(self, domain: str, authID: str = "") -> dict:
-        """Allows to know a domain's price 
+        """Allows to know a domain's price
 
         Args:
             domain (str): name of domain
@@ -1141,7 +1208,7 @@ class APIRest():
             return self.call("/domain/" + domain + "/price/", "get")
 
     def queryDomainClaim(self, domain: str) -> int:
-        """Allows to know if there is a claim on the domain name 
+        """Allows to know if there is a claim on the domain name
 
         Args:
             domain (str): name of domain
@@ -1176,7 +1243,7 @@ class APIRest():
         return self.call("/domains/" + filter, "get")
 
     def domainZoneInit(self, domain: str, numTemplate: int) -> dict:
-        """Resets all DNS settings from a template 
+        """Resets all DNS settings from a template
 
         Args:
             domain (str): Domain name
@@ -1197,7 +1264,9 @@ class APIRest():
 
         return self.call("/domain/" + domain + "/zone/init/", "patch", params)
 
-    def domainZoneCreate(self, domain: str, subdomain: str, type: str, value: str, options: dict) -> dict:
+    def domainZoneCreate(
+        self, domain: str, subdomain: str, type: str, value: str, options: dict
+    ) -> dict:
         """Creates a DNS record into the domain zonefile
 
         Args:
@@ -1205,7 +1274,7 @@ class APIRest():
             subdomain (str): subdomain
             type (str): type of DNS record. Accepted values are: 'A', 'AAAA', 'MX, 'CNAME', 'TXT', 'NS and 'SRV'
             value (str): value of the new DNS record
-            options (dict): contains multiple StructOptionsZone : settings of the new DNS record 
+            options (dict): contains multiple StructOptionsZone : settings of the new DNS record
 
         Throws:
             NetimAPIException
@@ -1227,8 +1296,10 @@ class APIRest():
 
         return self.call("/domain/" + domain + "/zone/", "post", params)
 
-    def domainZoneDelete(self, domain: str, subdomain: str, type: str, value: str) -> dict:
-        """Deletes a DNS record into the domain's zonefile 
+    def domainZoneDelete(
+        self, domain: str, subdomain: str, type: str, value: str
+    ) -> dict:
+        """Deletes a DNS record into the domain's zonefile
 
         Args:
             domain (str): name of the domain
@@ -1254,7 +1325,20 @@ class APIRest():
 
         return self.call("/domain/" + domain + "/zone/", "delete", params)
 
-    def domainZoneInitSoa(self, domain: str, ttl: int, ttlUnit: chr, refresh: int, refreshUnit: chr, retry: int, retryUnit: chr, expire: int, expireUnit: chr, minimum: int, minimumUnit: chr) -> dict:
+    def domainZoneInitSoa(
+        self,
+        domain: str,
+        ttl: int,
+        ttlUnit: chr,
+        refresh: int,
+        refreshUnit: chr,
+        retry: int,
+        retryUnit: chr,
+        expire: int,
+        expireUnit: chr,
+        minimum: int,
+        minimumUnit: chr,
+    ) -> dict:
         """Resets the SOA record of a domain name
 
         Args:
@@ -1296,7 +1380,7 @@ class APIRest():
         return self.call("/domain/" + domain + "/zone/init-soa/", "patch", params)
 
     def queryZoneList(self, domain: str) -> list:
-        """Returns all DNS records of a domain name 
+        """Returns all DNS records of a domain name
 
         Args:
             domain (str): Domain name
@@ -1340,7 +1424,7 @@ class APIRest():
         """Deletes an email forward
 
         Args:
-            mailBox (str): email adress 
+            mailBox (str): email adress
 
         Throws:
             NetimAPIException
@@ -1372,8 +1456,10 @@ class APIRest():
         domain = domain.lower()
         return self.call("/domain/" + domain + "/mail-forwardings/", "get")
 
-    def domainWebFwdCreate(self, fqdn: str, target: str, type: str, options: dict) -> dict:
-        """Creates a web forwarding 
+    def domainWebFwdCreate(
+        self, fqdn: str, target: str, type: str, options: dict
+    ) -> dict:
+        """Creates a web forwarding
 
         Args:
             fqdn (str): hostname (fully qualified domain name)
@@ -1400,7 +1486,7 @@ class APIRest():
         return self.call("/domain/" + fqdn + "/web-forwarding/", "post", params)
 
     def domainWebFwdDelete(self, fqdn: str) -> dict:
-        """Removes a web forwarding 
+        """Removes a web forwarding
 
         Args:
             fqdn (str): hostname, a fully qualified domain name
@@ -1417,7 +1503,7 @@ class APIRest():
         return self.call("/domain/" + fqdn + "/web-forwarding/", "delete")
 
     def queryWebFwdList(self, domain: str) -> list:
-        """Return all web forwarding of a domain name 
+        """Return all web forwarding of a domain name
 
         Args:
             domain (str): Domain name
@@ -1435,17 +1521,19 @@ class APIRest():
         domain = domain.lower()
         return self.call("/domain/" + domain + "/web-forwardings/", "get")
 
-    def sslCreate(self, prod: str, duration: int, CSRInfo: dict, validation: str) -> dict:
+    def sslCreate(
+        self, prod: str, duration: int, CSRInfo: dict, validation: str
+    ) -> dict:
         """Creates a SSL redirection
 
         Args:
-            prod (str): certificate type 
+            prod (str): certificate type
             duration (int): period of validity (in years)
-            CSRInfo (dict): containing informations about the CSR 
-            validation (str): validation method of the CSR (either by email or file) : 	
+            CSRInfo (dict): containing informations about the CSR
+            validation (str): validation method of the CSR (either by email or file) :
                 "file"
                         "email:admin@yourdomain.com"
-                        "email:postmaster@yourdomain.com,webmaster@yourdomain.com" 
+                        "email:postmaster@yourdomain.com,webmaster@yourdomain.com"
 
         Throws:
             NetimAPIException
@@ -1461,7 +1549,7 @@ class APIRest():
             "prod": prod,
             "duration": duration,
             "CSR": CSRInfo,
-            "validation": validation
+            "validation": validation,
         }
 
         return self.call("/ssl/", "post", params)
@@ -1509,7 +1597,7 @@ class APIRest():
         Args:
             IDSSL (str): SSL certificate ID
             CSRInfo (dict): Object containing informations about the CSR
-            validation (str): validation method of the CSR (either by email or file) : 	
+            validation (str): validation method of the CSR (either by email or file) :
                 "file"
                 "email:admin@yourdomain.com"
                 "email:postmaster@yourdomain.com,webmaster@yourdomain.com"
@@ -1532,7 +1620,7 @@ class APIRest():
         return self.call("/ssl/" + IDSSL + "/reissue/", "patch", params)
 
     def sslSetPreference(self, IDSSL: str, codePref: str, value: str) -> dict:
-        """Updates the settings of a SSL certificate. Currently, only the autorenew setting can be modified. 
+        """Updates the settings of a SSL certificate. Currently, only the autorenew setting can be modified.
 
         Args:
             IDSSL (str): SSL certificate ID
@@ -1565,21 +1653,23 @@ class APIRest():
             NetimAPIException
 
         Returns:
-            StructSSLInfo: containing the SSL certificate informations 
+            StructSSLInfo: containing the SSL certificate informations
 
         See:
             sslInfo API http://support.netim.com/en/wiki/SslInfo
         """
         return self.call("/ssl/" + IDSSL + "/", "get")
 
-    def webHostingCreate(self, fqdn: str, offer: str, duration: int, cms: dict = {}) -> dict:
+    def webHostingCreate(
+        self, fqdn: str, offer: str, duration: int, cms: dict = {}
+    ) -> dict:
         """Creates a web hosting
 
         Args:
             fqdn (str): Fully qualified domain of the main vhost. Warning, the secondary vhosts will always be subdomains of this FQDN
             offer (str): ID_TYPE_PROD of the hosting
-            duration (int): 
-            cms (dict): 
+            duration (int):
+            cms (dict):
 
         Throws:
             NetimAPIException
@@ -1663,10 +1753,7 @@ class APIRest():
         Returns:
             dict: giving information on the status of the operation
         """
-        params = {
-            "action": action,
-            "params": fparams
-        }
+        params = {"action": action, "params": fparams}
 
         return self.call("/webhosting/" + id, "patch", params)
 
@@ -1713,7 +1800,7 @@ class APIRest():
 
         Args:
             id (str): Hosting id
-            action (str): Possible values :"SetStaticEngine", "SetPHPVersion",  "SetFQDN", "SetWebApplicationFirewall", 
+            action (str): Possible values :"SetStaticEngine", "SetPHPVersion",  "SetFQDN", "SetWebApplicationFirewall",
             "ResetContent", "FlushLogs", "AddAlias", "RemoveAlias", "LinkSSLCert", "UnlinkSSLCert", "EnableLetsEncrypt",
             "DisableLetsEncrypt", "SetRedirectHTTPS", "InstallWordpress", "InstallPrestashop", "SetHold"
             fparams (dict): Depends of the action
@@ -1796,7 +1883,7 @@ class APIRest():
 
         Args:
             id (str): Hosting id
-            domain (str): 
+            domain (str):
 
         Throws:
             NetimAPIException
@@ -1810,7 +1897,9 @@ class APIRest():
 
         return self.call("/webhosting/" + id + "/domain-mail/", "delete", params)
 
-    def webHostingSSLCertCreate(self, id: str, sslName: str, crt: str, key: str, ca: str, csr: str = "") -> dict:
+    def webHostingSSLCertCreate(
+        self, id: str, sslName: str, crt: str, key: str, ca: str, csr: str = ""
+    ) -> dict:
         """Creates a SSL certificate
 
         Args:
@@ -1856,7 +1945,15 @@ class APIRest():
 
         return self.call("/webhosting/" + id + "/ssl/", "delete", params)
 
-    def webHostingProtectedDirCreate(self, id: str, fqdn: str, pathSecured: str, authname: str, username: str, password: str) -> dict:
+    def webHostingProtectedDirCreate(
+        self,
+        id: str,
+        fqdn: str,
+        pathSecured: str,
+        authname: str,
+        username: str,
+        password: str,
+    ) -> dict:
         """Creates a htpasswd protection on a directory
 
         Args:
@@ -1904,7 +2001,9 @@ class APIRest():
 
         return self.call("/webhosting/" + id + "/protected-dir/", "patch", params)
 
-    def webHostingProtectedDirDelete(self, id: str, fqdn: str, pathSecured: str) -> dict:
+    def webHostingProtectedDirDelete(
+        self, id: str, fqdn: str, pathSecured: str
+    ) -> dict:
         """Remove protection of a directory
 
         Args:
@@ -1925,7 +2024,19 @@ class APIRest():
 
         return self.call("/webhosting/" + id + "/protected-dir/", "delete", params)
 
-    def webHostingCronTaskCreate(self, id: str, fqdn: str, path: str, returnMethod: str, returnTarget: str, mm: str, hh: str, jj: str, mmm: str, jjj: str) -> dict:
+    def webHostingCronTaskCreate(
+        self,
+        id: str,
+        fqdn: str,
+        path: str,
+        returnMethod: str,
+        returnTarget: str,
+        mm: str,
+        hh: str,
+        jj: str,
+        mmm: str,
+        jjj: str,
+    ) -> dict:
         """Creates a cron task
 
         Args:
@@ -2002,7 +2113,9 @@ class APIRest():
 
         return self.call("/webhosting/" + id + "/cron-task/", "delete", params)
 
-    def webHostingFTPUserCreate(self, id: str, username: str, password: str, rootDir: str) -> dict:
+    def webHostingFTPUserCreate(
+        self, id: str, username: str, password: str, rootDir: str
+    ) -> dict:
         """Create a FTP user
 
         Args:
@@ -2059,9 +2172,7 @@ class APIRest():
         Returns:
             dict: StructOperationResponse giving information on the status of the operation
         """
-        params = {
-            "username": username
-        }
+        params = {"username": username}
 
         return self.call("/webhosting/" + id + "/ftp-user/", "delete", params)
 
@@ -2126,13 +2237,20 @@ class APIRest():
 
         return self.call("/webhosting/" + id + "/database/", "delete", params)
 
-    def webHostingDBUserCreate(self, id: str, username: str, password: str, internalAccess: str, externalAccess: str) -> dict:
+    def webHostingDBUserCreate(
+        self,
+        id: str,
+        username: str,
+        password: str,
+        internalAccess: str,
+        externalAccess: str,
+    ) -> dict:
         """Create a database user
 
         Args:
             id (str): Hosting id
-            username (str): 
-            password (str): 
+            username (str):
+            password (str):
             internalAccess (str): "RW", "RO" or "NO"
             externalAccess (str): "RW", "RO" or "NO"
 
@@ -2191,13 +2309,15 @@ class APIRest():
 
         return self.call("/webhosting/" + id + "/database-user/", "delete", params)
 
-    def webHostingMailCreate(self, id: str, email: str, password: str, quota: int) -> dict:
+    def webHostingMailCreate(
+        self, id: str, email: str, password: str, quota: int
+    ) -> dict:
         """Create a mailbox
 
         Args:
             id (str): Hosting id
-            email (str): 
-            password (str): 
+            email (str):
+            password (str):
             quota (int): Disk space allocated to this box in MB
 
         Throws:
@@ -2241,7 +2361,7 @@ class APIRest():
 
         Args:
             id (str): Hosting id
-            email (str): 
+            email (str):
 
         Throws:
             NetimAPIException
@@ -2296,11 +2416,11 @@ class APIRest():
         return self.call("/webhosting/" + id + "/mail-forwarding/", "delete", params)
 
     def webHostingZoneInit(self, fqdn: str, profil: int) -> dict:
-        """Resets all DNS settings from a template 
+        """Resets all DNS settings from a template
 
         Args:
-            fqdn (str): 
-            profil (int): 
+            fqdn (str):
+            profil (int):
 
         Throws:
             NetimAPIException
@@ -2316,7 +2436,20 @@ class APIRest():
 
         return self.call("/webhosting/" + fqdn + "/zone/init/", "patch", params)
 
-    def webHostingZoneInitSoa(self, fqdn: str, ttl: int, ttlUnit: str, refresh: int, refreshUnit: str, retry: int, retryUnit: str, expire: int, expireUnit: str, minimum: int, minimumUnit: str) -> dict:
+    def webHostingZoneInitSoa(
+        self,
+        fqdn: str,
+        ttl: int,
+        ttlUnit: str,
+        refresh: int,
+        refreshUnit: str,
+        retry: int,
+        retryUnit: str,
+        expire: int,
+        expireUnit: str,
+        minimum: int,
+        minimumUnit: str,
+    ) -> dict:
         """Resets the SOA record of a domain name for a webhosting
 
         Args:
@@ -2369,15 +2502,17 @@ class APIRest():
         """
         return self.call("/webhosting/" + fqdn + "/zone/", "get")
 
-    def webHostingZoneCreate(self, domain: str, subdomain: str, type: str, value: str, options: dict) -> dict:
+    def webHostingZoneCreate(
+        self, domain: str, subdomain: str, type: str, value: str, options: dict
+    ) -> dict:
         """Creates a DNS record into the webhosting domain zonefile
 
         Args:
             domain (str): name of the domain
-            subdomain (str): 
+            subdomain (str):
             type (str): type of DNS record. Accepted values are: 'A', 'AAAA', 'MX, 'CNAME', 'TXT', 'NS and 'SRV'
             value (str): value of the new DNS record
-            options (dict): settings of the new DNS record 
+            options (dict): settings of the new DNS record
 
         Throws:
             NetimAPIException
@@ -2397,12 +2532,14 @@ class APIRest():
 
         return self.call("/webhosting/" + fqdn + "/zone/", "post", params)
 
-    def webHostingZoneDelete(self, domain: str, subdomain: str, type: str, value: str) -> dict:
+    def webHostingZoneDelete(
+        self, domain: str, subdomain: str, type: str, value: str
+    ) -> dict:
         """Deletes a DNS record into the webhosting domain zonefile
 
         Args:
             domain (str): name of the domain
-            subdomain (str): 
+            subdomain (str):
             type (str): type of DNS record. Accepted values are: 'A', 'AAAA', 'MX, 'CNAME', 'TXT', 'NS and 'SRV'
             value (str): value of the new DNS record
 
