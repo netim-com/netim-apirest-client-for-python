@@ -365,7 +365,7 @@ class APIRest:
 
         return self.call("contact/" + id, "delete")
 
-    def queryOpe(self, id: str) -> dict:
+    def opeInfo(self, id: str) -> dict:
         """Query informations about the state of an operation
 
         Args:
@@ -378,7 +378,7 @@ class APIRest:
             NetimAPIException
 
         See:
-            queryOpe API http://support.netim.com/en/wiki/QueryOpe
+            opeInfo API http://support.netim.com/en/wiki/opeInfo
         """
 
         return self.call("operation/" + id, "get")
@@ -401,7 +401,7 @@ class APIRest:
 
         self.call("operation/" + id + "/cancel/", "patch")
 
-    def queryOpeList(self, tld: str) -> dict:
+    def opeList(self, filters: dict) -> list:
         """Returns the status (opened/closed) for all operations for the extension
 
         Args:
@@ -416,21 +416,9 @@ class APIRest:
         See:
             queryOpeList API https://support.netim.com/en/wiki/QueryOpeList
         """
-        return self.call("tld/" + tld + "/operations/", "get")
 
-    def queryOpePending(self) -> list:
-        """Returns the list of pending operations processing
-
-        Returns:
-            StructQueryOpePending[]: the list of pending operations processing
-
-        Throws:
-            NetimAPIException
-
-        See:
-            queryOpePending API https://support.netim.com/en/wiki/QueryOpePending
-        """
-        return self.call("operations/pending/", "get")
+        params = {"filters": filters}
+        return self.call("operations/", "post", params)
 
     def contactList(self, filters: dict) -> list:
         """Returns all contacts linked to the reseller account.
