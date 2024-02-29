@@ -1,4 +1,4 @@
-# APIRest-client-python
+# APIRest-client-python 1.0
 
 ## Description
 This client is designed to communicate with the netim REST API.
