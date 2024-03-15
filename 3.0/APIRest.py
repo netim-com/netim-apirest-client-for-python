@@ -1156,21 +1156,6 @@ class APIRest:
 
         return self.call("/domain/" + domain + "/dnssec/", "patch", params)
 
-    def domainWhois(self, domain: str) -> str:
-        """Returns whois informations on given domain
-
-        Args:
-            domain (str): the domain's name
-
-        Throws:
-            NetimAPIException
-
-        Returns:
-            str: information about the domain
-        """
-        domain = domain.lower()
-        return self.call("/domain/" + domain + "/whois/", "get")
-
     def domainPriceList(self) -> dict:
         """Returns the list of all prices for each tld
 
