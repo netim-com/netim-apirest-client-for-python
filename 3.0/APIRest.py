@@ -570,7 +570,7 @@ class APIRest:
         ns4: str,
         ns5: str,
         duration: int,
-        templateDNS: int = None,
+        options: dict = None,
     ) -> dict:
         """Requests a new domain registration
 
@@ -586,7 +586,7 @@ class APIRest:
             ns4 (str): the name of the fourth dns
             ns5 (str): the name of the fifth dns
             duration (int): how long the domain will be created
-            templateDNS (int, optional): number of the template DNS created on netim.com/direct. Defaults to None.
+            options (dict): additional options for the domain creation
 
         Returns:
             StructOperationResponse: giving information on the status of the operation
@@ -612,8 +612,8 @@ class APIRest:
             "duration": duration,
         }
 
-        if templateDNS is not None:
-            params["templateDNS"] = templateDNS
+        if options is not None:
+            params["options"] = options
 
         return self.call("domain/" + domain + "/", "post", params)
 
@@ -728,6 +728,7 @@ class APIRest:
         ns3: str,
         ns4: str,
         ns5: str,
+        options: dict = None,
     ) -> dict:
         """Requests the transfer of a domain name to Netim
 
@@ -743,6 +744,7 @@ class APIRest:
             ns3 (str): the name of the third dns
             ns4 (str): the name of the fourth dns
             ns5 (str): the name of the fifth dns
+            options (dict, optional): additional options for the domain transfer
 
         Throws:
             NetimAPIException
@@ -769,6 +771,9 @@ class APIRest:
             "ns5": ns5,
         }
 
+        if options is not None:
+            params["options"] = options
+
         return self.call("domain/" + domain + "/transfer/", "post", params)
 
     def domainTransferTrade(
@@ -784,6 +789,7 @@ class APIRest:
         ns3: str,
         ns4: str,
         ns5: str,
+        options: dict = None,
     ) -> dict:
         """Requests the transfer (with change of domain holder) of a domain name to Netim
 
@@ -799,6 +805,7 @@ class APIRest:
             ns3 (str): the name of the third dns
             ns4 (str): the name of the fourth dns
             ns5 (str): the name of the fifth dns
+            options (dict, optional): additional options for the domain transfer
 
         Throws:
             NetimAPIException
@@ -824,6 +831,9 @@ class APIRest:
             "ns4": ns4,
             "ns5": ns5,
         }
+        
+        if options is not None:
+            params["options"] = options
 
         return self.call("domain/" + domain + "/transfer-trade/", "post", params)
 
@@ -941,7 +951,7 @@ class APIRest:
 
         return self.call("domain/" + domain + "/preference/", "patch", params)
 
-    def domainTransferOwner(self, domain: str, idOwner: str) -> dict:
+    def domainTransferOwner(self, domain: str, idOwner: str, options: dict = None) -> dict:
         """Requests the transfer of the ownership to another party
 
         Args:
@@ -960,11 +970,14 @@ class APIRest:
         domain = domain.lower()
 
         params = {"idOwner": idOwner}
+        
+        if options is not None:
+            params["options"] = options
 
         return self.call("domain/" + domain + "/transfer-owner/", "put", params)
 
     def domainChangeContact(
-        self, domain: str, idAdmin: str, idTech: str, idBilling: str
+        self, domain: str, idAdmin: str, idTech: str, idBilling: str, options: dict = None
     ) -> dict:
         """Replaces the contacts of the domain (administrative, technical, billing)
 
@@ -986,6 +999,9 @@ class APIRest:
         domain = domain.lower()
 
         params = {"idAdmin": idAdmin, "idTech": idTech, "idBilling": idBilling}
+
+        if options is not None:
+            params["options"] = options
 
         return self.call("domain/" + domain + "/contacts/", "put", params)
 
