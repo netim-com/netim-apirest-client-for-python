@@ -564,11 +564,7 @@ class APIRest:
         idAdmin: str,
         idTech: str,
         idBilling: str,
-        ns1: str,
-        ns2: str,
-        ns3: str,
-        ns4: str,
-        ns5: str,
+        nameservers: dict,
         duration: int,
         options: dict = None,
     ) -> dict:
@@ -580,11 +576,7 @@ class APIRest:
             idAdmin (str): the id of the admin for the new domain
             idTech (str): the id of the tech for the new domain
             idBilling (str): the id of the billing for the new domain
-            ns1 (str): the name of the first dns
-            ns2 (str): the name of the second dns
-            ns3 (str): the name of the third dns
-            ns4 (str): the name of the fourth dns
-            ns5 (str): the name of the fifth dns
+            nameservers (dict): the list of nameservers
             duration (int): how long the domain will be created
             options (dict): additional options for the domain creation
 
@@ -604,11 +596,7 @@ class APIRest:
             "idAdmin": idAdmin,
             "idTech": idTech,
             "idBilling": idBilling,
-            "ns1": ns1,
-            "ns2": ns2,
-            "ns3": ns3,
-            "ns4": ns4,
-            "ns5": ns5,
+            "nameservers": nameservers,
             "duration": duration,
         }
 
@@ -641,11 +629,7 @@ class APIRest:
         idAdmin: str,
         idTech: str,
         idBilling: str,
-        ns1: str,
-        ns2: str,
-        ns3: str,
-        ns4: str,
-        ns5: str,
+        nameservers: dict,
         duration: int,
         launchPhase: str,
     ) -> dict:
@@ -657,11 +641,7 @@ class APIRest:
             idAdmin (str): the id of the admin for the new domain
             idTech (str): the id of the tech for the new domain
             idBilling (str): the id of the billing for the new domain
-            ns1 (str): the name of the first dns
-            ns2 (str): the name of the second dns
-            ns3 (str): the name of the third dns
-            ns4 (str): the name of the fourth dns
-            ns5 (str): the name of the fifth dns
+            nameservers (dict): the list of nameservers
             duration (int): how long the domain will be created
             launchPhase (str): Code of the launch period.
 
@@ -681,11 +661,7 @@ class APIRest:
             "idAdmin": idAdmin,
             "idTech": idTech,
             "idBilling": idBilling,
-            "ns1": ns1,
-            "ns2": ns2,
-            "ns3": ns3,
-            "ns4": ns4,
-            "ns5": ns5,
+            "nameservers": nameservers,
             "duration": duration,
             "launchPhase": launchPhase,
         }
@@ -723,11 +699,7 @@ class APIRest:
         idAdmin: str,
         idTech: str,
         idBilling: str,
-        ns1: str,
-        ns2: str,
-        ns3: str,
-        ns4: str,
-        ns5: str,
+        nameservers: dict,
         options: dict = None,
     ) -> dict:
         """Requests the transfer of a domain name to Netim
@@ -739,11 +711,7 @@ class APIRest:
             idAdmin (str): a valid idAdmin
             idTech (str): a valid idTech
             idBilling (str): a valid idBilling
-            ns1 (str): the name of the first dns
-            ns2 (str): the name of the second dns
-            ns3 (str): the name of the third dns
-            ns4 (str): the name of the fourth dns
-            ns5 (str): the name of the fifth dns
+            nameservers (dict): the list of nameservers
             options (dict, optional): additional options for the domain transfer
 
         Throws:
@@ -764,11 +732,7 @@ class APIRest:
             "idAdmin": idAdmin,
             "idTech": idTech,
             "idBilling": idBilling,
-            "ns1": ns1,
-            "ns2": ns2,
-            "ns3": ns3,
-            "ns4": ns4,
-            "ns5": ns5,
+            "nameservers": nameservers,
         }
 
         if options is not None:
@@ -784,11 +748,7 @@ class APIRest:
         idAdmin: str,
         idTech: str,
         idBilling: str,
-        ns1: str,
-        ns2: str,
-        ns3: str,
-        ns4: str,
-        ns5: str,
+        nameservers: dict,
         options: dict = None,
     ) -> dict:
         """Requests the transfer (with change of domain holder) of a domain name to Netim
@@ -800,11 +760,7 @@ class APIRest:
             idAdmin (str): a valid idAdmin
             idTech (str): a valid idTech
             idBilling (str): a valid idBilling
-            ns1 (str): the name of the first dns
-            ns2 (str): the name of the second dns
-            ns3 (str): the name of the third dns
-            ns4 (str): the name of the fourth dns
-            ns5 (str): the name of the fifth dns
+            nameservers (dict): the list of nameservers
             options (dict, optional): additional options for the domain transfer
 
         Throws:
@@ -825,11 +781,7 @@ class APIRest:
             "idAdmin": idAdmin,
             "idTech": idTech,
             "idBilling": idBilling,
-            "ns1": ns1,
-            "ns2": ns2,
-            "ns3": ns3,
-            "ns4": ns4,
-            "ns5": ns5,
+            "nameservers": nameservers,
         }
         
         if options is not None:
@@ -844,11 +796,7 @@ class APIRest:
         idAdmin: str,
         idTech: str,
         idBilling: str,
-        ns1: str,
-        ns2: str,
-        ns3: str,
-        ns4: str,
-        ns5: str,
+        nameservers: dict,
     ) -> dict:
         """Requests the transfer (with change of domain holder) of a domain name to Netim
 
@@ -858,11 +806,7 @@ class APIRest:
             idAdmin (str): a valid idAdmin
             idTech (str): a valid idTech
             idBilling (str): a valid idBilling
-            ns1 (str): the name of the first dns
-            ns2 (str): the name of the second dns
-            ns3 (str): the name of the third dns
-            ns4 (str): the name of the fourth dns
-            ns5 (str): the name of the fifth dns
+            nameservers (dict): the list of nameservers
 
         Throws:
             NetimAPIException
@@ -880,11 +824,7 @@ class APIRest:
             "idAdmin": idAdmin,
             "idTech": idTech,
             "idBilling": idBilling,
-            "ns1": ns1,
-            "ns2": ns2,
-            "ns3": ns3,
-            "ns4": ns4,
-            "ns5": ns5,
+            "nameservers": nameservers,
         }
 
         return self.call("domain/" + domain + "/internal-transfer/", "patch", params)
@@ -1006,17 +946,13 @@ class APIRest:
         return self.call("domain/" + domain + "/contacts/", "put", params)
 
     def domainChangeDNS(
-        self, domain: str, ns1: str, ns2: str, ns3: str, ns4: str, ns5: str
+        self, domain: str, nameservers: dict
     ) -> dict:
         """Replaces the DNS servers of the domain (redelegation)
 
         Args:
             domain (str): name of the domain
-            ns1 (str): the name of the first dns
-            ns2 (str): name of the second dns
-            ns3 (str): name of the third dns
-            ns4 (str): name of the fourth dns
-            ns5 (str): name of the fifth dns
+            nameservers (dict): the list of nameservers
 
         Throws:
             NetimAPIException
@@ -1029,7 +965,7 @@ class APIRest:
         """
         domain = domain.lower()
 
-        params = {"ns1": ns1, "ns2": ns2, "ns3": ns3, "ns4": ns4, "ns5": ns5}
+        params = {"nameservers": nameservers}
 
         return self.call("domain/" + domain + "/dns/", "put", params)
 
