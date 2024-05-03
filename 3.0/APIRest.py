@@ -1182,12 +1182,12 @@ class APIRest:
         params = {"filters": filters}
         return self.call("/domains/", "post", params)
 
-    def domainZoneInit(self, domain: str, numTemplate: int) -> dict:
+    def domainZoneInit(self, domain: str, templateDNS: int) -> dict:
         """Resets all DNS settings from a template
 
         Args:
             domain (str): Domain name
-            numTemplate (int): Template number
+            templateDNS (int): Template number
 
         Throws:
             NetimAPIException
@@ -1200,7 +1200,7 @@ class APIRest:
         """
         domain = domain.lower()
 
-        params = {"numTemplate": numTemplate}
+        params = {"templateDNS": templateDNS}
 
         return self.call("/domain/" + domain + "/zone/init/", "patch", params)
 
@@ -2355,12 +2355,12 @@ class APIRest:
 
         return self.call("/webhosting/" + id + "/mail-forwarding/", "delete", params)
 
-    def webHostingZoneInit(self, fqdn: str, profil: int) -> dict:
+    def webHostingZoneInit(self, fqdn: str, templateDNS: int) -> dict:
         """Resets all DNS settings from a template
 
         Args:
             fqdn (str):
-            profil (int):
+            templateDNS (int):
 
         Throws:
             NetimAPIException
@@ -2371,7 +2371,7 @@ class APIRest:
         fqdn = fqdn.lower()
 
         params = {
-            "profil": profil,
+            "templateDNS": templateDNS,
         }
 
         return self.call("/webhosting/" + fqdn + "/zone/init/", "patch", params)
