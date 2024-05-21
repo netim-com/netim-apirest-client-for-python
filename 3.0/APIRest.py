@@ -1108,8 +1108,11 @@ class APIRest:
 
         return self.call("/domain/" + domain + "/dnssec/", "patch", params)
 
-    def domainPriceList(self) -> dict:
+    def domainPriceList(self, tld: str = "") -> dict:
         """Returns the list of all prices for each tld
+
+        Args:
+            tld (str): Filter list on specific domain tld
 
         Throws:
             NetimAPIException
@@ -1120,9 +1123,14 @@ class APIRest:
         See:
             domainPriceList API http://support.netim.com/en/wiki/DomainPriceList
         """
-        return self.call("/tlds/price-list/", "get")
 
-    def queryDomainPrice(self, domain: str, authID: str = "") -> dict:
+        if tld:
+            params = {"tld": tld}
+            return self.call("/tlds/price-list/", "get", params)
+        else:
+            return self.call("/tlds/price-list/", "get")
+
+    def domainGetPrices(self, domain: str, authID: str = "") -> dict:
         """Allows to know a domain's price
 
         Args:
@@ -1133,10 +1141,10 @@ class APIRest:
             NetimAPIException
 
         Returns:
-            StructQueryDomainPrice: An object StructQueryDomainPrice containing information about a domain's price
+            StructDomainGetPrices: An object StructDomainGetPrices containing information about a domain's price
 
         See:
-            queryDomainPrice API http://support.netim.com/en/wiki/QueryDomainPrice
+            domainGetPrices API http://support.netim.com/en/wiki/domainGetPrices
         """
         domain = domain.lower()
         if authID:
@@ -1158,7 +1166,7 @@ class APIRest:
             int: 0 = no claim ; 1 = at least one claim
 
         See:
-            queryDomainPrice API http://support.netim.com/en/wiki/QueryDomainPrice
+            queryDomainClaim API http://support.netim.com/en/wiki/queryDomainClaim
         """
         domain = domain.lower()
         return self.call("/domain/" + domain + "/claim/", "get")
