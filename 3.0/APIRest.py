@@ -1222,7 +1222,7 @@ class APIRest:
             subdomain (str): subdomain
             type (str): type of DNS record. Accepted values are: 'A', 'AAAA', 'MX, 'CNAME', 'TXT', 'NS and 'SRV'
             value (str): value of the new DNS record
-            options (dict): contains multiple StructOptionsZone : settings of the new DNS record
+            options (dict): contains multiple StructZoneParam : settings of the new DNS record
 
         Throws:
             NetimAPIException
@@ -1232,7 +1232,7 @@ class APIRest:
 
         See:
             domainZoneCreate API http://support.netim.com/en/wiki/DomainZoneCreate
-            StructOptionsZone http://support.netim.com/en/wiki/StructOptionsZone
+            StructZoneParam http://support.netim.com/en/wiki/StructZoneParam
         """
         domain = domain.lower()
         params = {
@@ -2469,7 +2469,7 @@ class APIRest:
             dict: StructOperationResponse giving information on the status of the operation
 
         See:
-            StructOptionsZone API http://support.netim.com/en/wiki/StructOptionsZone
+            StructZoneParam API http://support.netim.com/en/wiki/StructZoneParam
         """
         fqdn = subdomain.lower() + "." + domain.lower()
         params = {
