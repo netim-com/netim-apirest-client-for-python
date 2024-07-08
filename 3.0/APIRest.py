@@ -1010,26 +1010,6 @@ class APIRest:
         params = {"sendtoregistrant": sendToRegistrant}
         return self.call("domain/" + domain + "/authid/", "patch", params)
 
-    def domainRelease(self, domain: str) -> dict:
-        """Release a domain name (managed by the reseller) to its registrant (who will become a direct customer at Netim)
-
-        Args:
-            domain (str): domain name to be released
-
-        Throws:
-            NetimAPIException
-
-        Returns:
-            StructOperationResponse: giving information on the status of the operation
-
-        See:
-            domainRelease API http://support.netim.com/en/wiki/DomainRelease
-        """
-
-        domain = domain.lower()
-
-        return self.call("domain/" + domain + "/release/", "patch")
-
     def domainSetMembership(self, domain: str, token: str) -> dict:
         """Adds a membership to the domain name
 
