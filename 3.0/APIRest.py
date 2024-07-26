@@ -1224,6 +1224,36 @@ class APIRest:
 
         return self.call("/domain/" + domain + "/zone/", "post", params)
 
+    def domainZoneUpdate(
+        self, domain: str, subdomain: str, type: str, value: str, newValue: str, options: dict,
+    ) -> dict:
+        """Creates a DNS record into the domain zonefile
+
+        Args:
+                domain (str): name of the domain
+                subdomain (str): subdomain
+                type (str): type of DNS record. Accepted values are: 'A', 'AAAA', 'MX, 'CNAME', 'TXT', 'NS and 'SRV'
+                value (str): current value of the DNS record
+                newValue (str): new value of the DNS record
+                options (dict): contains multiple StructZoneParam : settings of the new DNS record
+
+        Throws:
+                NetimAPIException
+
+        Returns:
+                StructOperationResponse: giving information on the status of the operation
+        """
+        domain = domain.lower()
+        params = {
+            "subdomain": subdomain,
+            "type": type,
+            "value": value,
+            "newValue": newValue,
+            "options": options,
+        }
+
+        return self.call("/domain/" + domain + "/zone/update/", "patch", params)
+
     def domainZoneDelete(
         self, domain: str, subdomain: str, type: str, value: str
     ) -> dict:
@@ -2459,6 +2489,35 @@ class APIRest:
         }
 
         return self.call("/webhosting/" + fqdn + "/zone/", "post", params)
+    
+    def webHostingZoneUpdate(
+        self, domain: str, subdomain: str, type: str, value: str, newValue: str, options: dict
+    ) -> dict:
+        """Updates a DNS record from the webhosting domain zonefile
+
+        Args:
+            domain (str): name of the domain
+            subdomain (str):
+            type (str): type of DNS record. Accepted values are: 'A', 'AAAA', 'MX, 'CNAME', 'TXT', 'NS and 'SRV'
+            value (str): current value of the DNS record
+            newValue (str): new value of the DNS record
+            options (dict): settings of the new DNS record
+
+        Throws:
+            NetimAPIException
+
+        Returns:
+            dict: StructOperationResponse giving information on the status of the operation
+        """
+        fqdn = subdomain.lower() + "." + domain.lower()
+        params = {
+            "type": type,
+            "value": value,
+            "newValue": newValue,
+            "options": options,
+        }
+
+        return self.call("/webhosting/" + fqdn + "/zone/", "patch", params)
 
     def webHostingZoneDelete(
         self, domain: str, subdomain: str, type: str, value: str
