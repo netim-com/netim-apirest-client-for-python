@@ -1337,6 +1337,22 @@ class APIRest:
 
         return self.call("/domain/" + domain + "/zone/init-soa/", "patch", params)
 
+    def domainZoneInfo(
+        self,
+        domain: str,
+    ) -> dict:
+        """Returns informations about a DNS zone
+
+        Throws:
+            NetimAPIException
+
+        Returns:
+            StructOperationResponse: giving information on the status of the operation
+        """
+        domain = domain.lower()
+
+        return self.call("/domain/" + domain + "/zone/info/", "get")
+
     def queryZoneList(self, domain: str) -> list:
         """Returns all DNS records of a domain name
 
