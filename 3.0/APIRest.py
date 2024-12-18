@@ -989,12 +989,12 @@ class APIRest:
         params = {"enable": enable}
         return self.call("domain/" + domain + "/dnssec/", "patch", params)
 
-    def domainAuthID(self, domain: str, sendToRegistrant: int) -> dict:
+    def domainAuthID(self, domain: str, sendTo: int) -> dict:
         """Returns the authorization code to transfer the domain name to another registrar or to another client account
 
         Args:
             domain (str): name of the domain to get the AuthID
-            sendToRegistrant (int): recipient of the AuthID. Possible value are 0 for the reseller and 1 for the registrant
+            sendTo	(int): send the authorization code to 0: Reseller, 1: Registrant, 2: None
 
         Throws:
             NetimAPIException
@@ -1007,7 +1007,7 @@ class APIRest:
         """
         domain = domain.lower()
 
-        params = {"sendtoregistrant": sendToRegistrant}
+        params = {"sendto": sendTo}
         return self.call("domain/" + domain + "/authid/", "patch", params)
 
     def domainSetMembership(self, domain: str, token: str) -> dict:
