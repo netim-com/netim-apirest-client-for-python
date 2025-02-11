@@ -1048,24 +1048,13 @@ class APIRest:
         """
         return self.call("/tld/" + tld + "/", "get")
 
-    def domainSetDNSSecExt(
-        self,
-        domain: str,
-        DSRecords: list,
-        flags: int,
-        protocol: int,
-        algo: int,
-        pubKey: str,
-    ) -> dict:
-        """Allows to sign a domain name with DNSSEC if it doesn't use NETIM DNS servers
+
+    def domainDSRecordCreate(self, domain: str, data: list) -> dict:
+        """Add DS records to a domain if it does not use NETIM’s DNS servers
 
         Args:
-            domain (str): name of the domain
-            DSRecords (list): A StructDSRecord object
-            flags (int):
-            protocol (int):
-            algo (int):
-            pubKey (str):
+            domain (str):   Domain name
+            data (list):    An array of dsData or keyData
 
         Throws:
             NetimAPIException
@@ -1074,19 +1063,76 @@ class APIRest:
             StructOperationResponse: giving information on the status of the operation
 
         See:
-            domainSetDNSSecExt API http://support.netim.com/en/wiki/DomainSetDNSSecExt
+            https://support.netim.com/en/docs/api-rest-3-0/domain-names/ds-record-create
+        """
+        domain = domain.lower()
+        params = {
+            "data": data,
+        }
+
+        return self.call("/domain/" + domain + "/ds-record/", "post", params)
+
+    def domainDSRecordDelete(self, domain: str, data: list) -> dict:
+        """Remove DS records from a domain if it does not use NETIM’s DNS servers
+
+        Args:
+            domain (str):   Domain name
+            data (list):    An array of dsData or keyData
+
+        Throws:
+            NetimAPIException
+
+        Returns:
+            StructOperationResponse: giving information on the status of the operation
+
+        See:
+            https://support.netim.com/en/docs/api-rest-3-0/domain-names/ds-record-delete
+        """
+        domain = domain.lower()
+        params = {
+            "data": data,
+        }
+
+        return self.call("/domain/" + domain + "/ds-record/", "delete", params)
+
+    def domainDSRecordDeleteAll(self, domain: str) -> dict:
+        """Remove DS records from a domain if it does not use NETIM’s DNS servers
+
+        Args:
+            domain (str):   Domain name
+
+        Throws:
+            NetimAPIException
+
+        Returns:
+            StructOperationResponse: giving information on the status of the operation
+
+        See:
+            https://support.netim.com/en/docs/api-rest-3-0/domain-names/ds-record-delete-all
         """
         domain = domain.lower()
 
-        params = {
-            "DSRecords": DSRecords,
-            "flags": flags,
-            "protocol": protocol,
-            "algo": algo,
-            "pubKey": pubKey,
-        }
+        return self.call("/domain/" + domain + "/ds-record/", "delete")
 
-        return self.call("/domain/" + domain + "/dnssec/", "patch", params)
+    def domainDSRecordList(self, domain: str) -> dict:
+        """Remove DS records from a domain if it does not use NETIM’s DNS servers
+
+        Args:
+            domain (str):   Domain name
+
+        Throws:
+            NetimAPIException
+
+        Returns:
+            Array of dsData or keyData
+
+        See:
+            https://support.netim.com/en/docs/api-rest-3-0/domain-names/ds-record-list
+        """
+        domain = domain.lower()
+
+        return self.call("/domain/" + domain + "/ds-record/", "get")
+
 
     def domainPriceList(self, tld: str = "") -> dict:
         """Returns the list of all prices for each tld
