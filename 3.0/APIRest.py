@@ -1399,6 +1399,23 @@ class APIRest:
 
         return self.call("/domain/" + domain + "/zone/info/", "get")
 
+    def domainZoneCheck(
+        self, domain: str, nameservers: dict
+    ) -> dict:
+        """Investigates the state of the domain name from the top to the bottom of the DNS tree.
+
+        Throws:
+            NetimAPIException
+
+        Returns:
+            array
+        """
+        domain = domain.lower()
+
+        params = {"nameservers": nameservers}
+
+        return self.call("domain/" + domain + "/zone/check/", "post", params)
+
     def queryZoneList(self, domain: str) -> list:
         """Returns all DNS records of a domain name
 
