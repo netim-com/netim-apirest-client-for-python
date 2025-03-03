@@ -1697,6 +1697,20 @@ class APIRest:
         """
         return self.call("/ssl/" + IDSSL + "/", "get")
 
+
+    def sslList(self, filters: dict) -> list:
+        """List SSL certificates matching filters
+
+        Throws:
+            NetimAPIException
+
+        Returns:
+            array
+        """
+        params = {"filters": filters}
+        return self.call("ssl/list/", "post", params)
+
+
     def webHostingCreate(
         self, fqdn: str, offer: str, duration: int, cms: dict = {}
     ) -> dict:
