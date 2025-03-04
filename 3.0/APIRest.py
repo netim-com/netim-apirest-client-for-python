@@ -2636,3 +2636,7 @@ class APIRest:
         }
 
         return self.call("/webhosting/" + fqdn + "/zone/", "delete", params)
+
+    def brandProtectionList(self, filters: dict) -> list:
+        params = {"filters": filters}
+        return self.call("brandprotection/list/", "post", params)
