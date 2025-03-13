@@ -286,7 +286,7 @@ class APIRest:
 
         return self.call("hello/", "get")
 
-    def queryResellerAccount(self) -> dict:
+    def accountInfo(self) -> dict:
         """Returns the list of parameters reseller account
 
         Returns:
@@ -1179,7 +1179,7 @@ class APIRest:
         else:
             return self.call("/domain/" + domain + "/price/", "get")
 
-    def queryDomainClaim(self, domain: str) -> int:
+    def domainCheckClaims(self, domain: str) -> int:
         """Allows to know if there is a claim on the domain name
 
         Args:
@@ -1190,9 +1190,6 @@ class APIRest:
 
         Returns:
             int: 0 = no claim ; 1 = at least one claim
-
-        See:
-            queryDomainClaim API http://support.netim.com/en/wiki/queryDomainClaim
         """
         domain = domain.lower()
         return self.call("/domain/" + domain + "/claim/", "get")
@@ -1416,7 +1413,7 @@ class APIRest:
 
         return self.call("domain/" + domain + "/zone/check/", "post", params)
 
-    def queryZoneList(self, domain: str) -> list:
+    def domainZoneList(self, domain: str) -> list:
         """Returns all DNS records of a domain name
 
         Args:
@@ -1426,10 +1423,7 @@ class APIRest:
             NetimAPIException
 
         Returns:
-            StructQueryZoneList[]: A list of StructQueryZoneList
-
-        See:
-            queryZoneList API http://support.netim.com/en/wiki/QueryZoneList
+            StructDomainZoneList[]: A list of StructDomainZoneList
         """
         domain = domain.lower()
 
@@ -1475,7 +1469,7 @@ class APIRest:
         mailBox = mailBox.lower()
         return self.call("/domain/" + mailBox + "/mail-forwarding/", "delete")
 
-    def queryMailFwdList(self, domain: str) -> list:
+    def domainMailFwdList(self, domain: str) -> list:
         """Returns all email forwards for a domain name
 
         Args:
@@ -1485,10 +1479,7 @@ class APIRest:
             NetimAPIException
 
         Returns:
-            StructQueryMailFwdList[]: A list of StructQueryMailFwdList
-
-        See:
-            queryMailFwdList API http://support.netim.com/en/wiki/QueryMailFwdList
+            StructDomainMailFwdList[]: A list of StructDomainMailFwdList
         """
         domain = domain.lower()
         return self.call("/domain/" + domain + "/mail-forwardings/", "get")
@@ -1539,7 +1530,7 @@ class APIRest:
         """
         return self.call("/domain/" + fqdn + "/web-forwarding/", "delete")
 
-    def queryWebFwdList(self, domain: str) -> list:
+    def domainWebFwdList(self, domain: str) -> list:
         """Return all web forwarding of a domain name
 
         Args:
@@ -1549,11 +1540,7 @@ class APIRest:
             NetimAPIException
 
         Returns:
-            StructQueryWebFwdList[]: A list of StructQueryWebFwdList
-
-        See:
-            domainWebFwdDelete API http://support.netim.com/en/wiki/QueryWebFwdList
-            StructQueryWebFwdList https://support.netim.com/fr/wiki/StructQueryWebFwdList
+            StructDomainWebFwdList[]: A list of StructDomainWebFwdList
         """
         domain = domain.lower()
         return self.call("/domain/" + domain + "/web-forwardings/", "get")
@@ -2549,7 +2536,7 @@ class APIRest:
             NetimAPIException
 
         Returns:
-            list: StructQueryZoneList
+            list: StructDomainZoneList
         """
         return self.call("/webhosting/" + fqdn + "/zone/", "get")
 
