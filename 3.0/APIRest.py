@@ -13,16 +13,16 @@ class APIRest:
     """Constructor for class APIRest
 
     Args:
-        userID (str): the ID the client uses to connect to his NETIM account.
-        secret (str): the SECRET the client uses to connect to his NETIM account.
+        name (str): API user name
+        key (str): API key
 
     """
 
     __connected = False
     __sessionID = None
 
-    __userID = None
-    __secret = None
+    __name = None
+    __key = None
     __apiURL = None
     __preferences = {"lang": None}
 
@@ -33,25 +33,25 @@ class APIRest:
     __lastResponse = None
     __lastError = None
 
-    def __init__(self, userID: str = None, secret: str = None):
+    def __init__(self, name: str = None, key: str = None):
         atexit.register(self.__del__)
 
         xml = etree.parse(os.path.dirname(os.path.abspath(__file__)) + "/conf.xml")
         try:
-            if userID is None and secret is None:  # No parameters
+            if name is None and key is None:  # No parameters
                 if (
-                    xml.xpath("/configuration/login")[0].text != ""
-                    and xml.xpath("/configuration/secret")[0].text != ""
+                    xml.xpath("/configuration/name")[0].text != ""
+                    and xml.xpath("/configuration/key")[0].text != ""
                 ):
-                    self.__userID = xml.xpath("/configuration/login")[0].text
-                    self.__secret = xml.xpath("/configuration/secret")[0].text
+                    self.__name = xml.xpath("/configuration/name")[0].text
+                    self.__key = xml.xpath("/configuration/key")[0].text
                 else:
-                    raise NetimAPIException("Missing login/secret in conf file.")
-            elif userID is not None and secret is not None:  # With parameters
-                self.__userID = userID
-                self.__secret = secret
+                    raise NetimAPIException("Missing login/key in conf file.")
+            elif name is not None and key is not None:  # With parameters
+                self.__name = name
+                self.__key = key
             else:
-                raise NetimAPIException("Missing login/secret.")
+                raise NetimAPIException("Missing name/key.")
 
             if xml.xpath("/configuration/url")[0].text != "":
                 self.__apiURL = xml.xpath("/configuration/url")[0].text
@@ -139,7 +139,7 @@ class APIRest:
                 }
                 response = requests.post(
                     self.__apiURL + "/session",
-                    auth=(self.__userID, self.__secret),
+                    auth=(self.__name, self.__key),
                     headers=headers,
                     data=json.dumps({"preferences": self.__preferences}),
                 )
