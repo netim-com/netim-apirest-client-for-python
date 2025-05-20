@@ -1213,6 +1213,22 @@ class APIRest:
         params = {"filters": filters}
         return self.call("/domains/", "post", params)
 
+    def domainProductInfo(self, tld: str) -> dict:
+        """Returns informations about a domain product
+
+        Args:
+            tld (dict): Domain tld
+
+        Throws:
+            NetimAPIException
+
+        Returns:
+            dict: Informations about a domain product
+        """
+
+        tld = tld.lower()
+        return self.call("/domains/product/" + tld + "/", "get")
+
     def domainZoneInit(self, domain: str, templateDNS: int) -> dict:
         """Resets all DNS settings from a template
 
@@ -1697,6 +1713,21 @@ class APIRest:
         params = {"filters": filters}
         return self.call("ssl/list/", "post", params)
 
+    def sslProductInfo(self, product: str) -> dict:
+        """Returns informations about a SSL product
+
+        Args:
+            tld (dict): SSL product
+
+        Throws:
+            NetimAPIException
+
+        Returns:
+            dict: Informations about a SSL product
+        """
+
+        product = product.upper()
+        return self.call("/ssl/product/" + product + "/", "get")
 
     def webHostingCreate(
         self, fqdn: str, offer: str, duration: int, cms: dict = {}
