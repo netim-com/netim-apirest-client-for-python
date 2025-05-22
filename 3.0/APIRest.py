@@ -1010,27 +1010,6 @@ class APIRest:
         params = {"sendto": sendTo}
         return self.call("domain/" + domain + "/authid/", "patch", params)
 
-    def domainSetMembership(self, domain: str, token: str) -> dict:
-        """Adds a membership to the domain name
-
-        Args:
-            domain (str): name of domain
-            token (str): membership number into the community
-
-        Throws:
-            NetimAPIException
-
-        Returns:
-            StructOperationResponse: giving information on the status of the operation
-
-        See:
-            domainSetMembership API http://support.netim.com/en/wiki/DomainSetMembership
-        """
-        domain = domain.lower()
-
-        params = {"token": token}
-        return self.call("/domain/" + domain + "/membership/", "patch", params)
-
     def domainDSRecordCreate(self, domain: str, data: list) -> dict:
         """Add DS records to a domain if it does not use NETIM’s DNS servers
 
