@@ -1031,24 +1031,6 @@ class APIRest:
         params = {"token": token}
         return self.call("/domain/" + domain + "/membership/", "patch", params)
 
-    def domainTldInfo(self, tld: str) -> dict:
-        """Returns all available operations for a given TLD
-
-        Args:
-            tld (str): a valid tld without the dot before it
-
-        Throws:
-            NetimAPIException
-
-        Returns:
-            StructOperationResponse: giving information on the status of the operation
-
-        See:
-            domainTldInfo API http://support.netim.com/en/wiki/DomainTldInfo
-        """
-        return self.call("/tld/" + tld + "/", "get")
-
-
     def domainDSRecordCreate(self, domain: str, data: list) -> dict:
         """Add DS records to a domain if it does not use NETIM’s DNS servers
 
