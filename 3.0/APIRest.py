@@ -143,17 +143,26 @@ class APIRest:
                     headers=headers,
                     data=json.dumps({"preferences": self.__preferences}),
                 )
+                
             else:
                 headers = {
                     "Authorization": "Bearer " + self.__sessionID,
                     "Content-type": "application/json",
                 }
                 function = getattr(requests, httpVerb)
-                response = function(
-                    self.__apiURL + "/" + ressource,
-                    headers=headers,
-                    data=json.dumps(params),
-                )
+
+                if params:
+                    response = function(
+                        self.__apiURL + "/" + ressource,
+                        headers=headers,
+                        data=json.dumps(params),
+                    )
+                else:
+                    response = function(
+                        self.__apiURL + "/" + ressource,
+                        headers=headers,
+                    )
+
             self.__lastHttpStatus = response.status_code
 
             try:
@@ -2616,6 +2625,156 @@ class APIRest:
 
         return self.call("/webhosting/" + fqdn + "/zone/", "delete", params)
 
-    def brandProtectionList(self, filters: dict) -> list:
+
+    def brandProtectionCreate(
+        self, label: str, product: str, duration: int, idOwner: str, type: str, infos: dict
+    ) -> dict:
+        """Create a new brand protection
+
+        Args:
+            label (str): Brand main label
+            product (str): Brand protection product ID
+            duration (int): Period of validity in years
+            idOwner (str): ID of the owner contact
+            type (str): Brand’s type
+            infos (dict): Array of strings containing brand datas
+
+        Throws:
+            NetimAPIException
+
+        Returns:
+            dict: StructOperationResponse
+        """
+        params = {
+            "label": label,
+            "prod": product,
+            "duration": duration,
+            "idOwner": idOwner,
+            "type": type,
+            "infos": infos,
+        }
+
+        return self.call("brandprotection/", "post", params)
+
+    def brandProtectionInfo(
+        self, id: str
+    ) -> dict:
+        """Return all information about a brand protection
+
+        Args:
+            id (str): Brand protection ID
+
+        Throws:
+            NetimAPIException
+
+        Returns:
+            dict: StructBrandProtectionInfo
+        """
+        return self.call("brandprotection/" + id + "/", "get")
+
+    def brandProtectionProductInfo(
+        self, product: str
+    ) -> dict:
+        """Return all information about a brand protection product
+
+        Args:
+            product (str): Brand protection product ID
+
+        Throws:
+            NetimAPIException
+
+        Returns:
+            dict: array
+        """
+        return self.call("brandprotection/product/" + product + "/", "get")
+
+    def brandProtectionList(
+        self, filters: dict
+    ) -> list:
+        """List brand protections matching filters
+
+        Args:
+            filters (dict): Search filters
+
+        Throws:
+            NetimAPIException
+
+        Returns:
+            list: array
+        """
         params = {"filters": filters}
         return self.call("brandprotection/list/", "post", params)
+
+    def brandProtectionTransferOwner(
+        self, id: str, idOwner: str
+    ) -> dict:
+        """Request the transfer of the ownership to another party
+
+        Args:
+            id (str): Brand protection ID
+            idOwner (str): ID of the owner contact
+
+        Throws:
+            NetimAPIException
+
+        Returns:
+            dict: StructOperationResponse
+        """
+        params = {"idOwner": idOwner}
+        return self.call("brandprotection/" + id + "/transfer-owner/", "put", params)
+
+    def brandProtectionRenew(
+        self, id: str, duration: int
+    ) -> dict:
+        """Renew a brand protection for a new period
+
+        Args:
+            id (str): Brand protection ID
+            duration (int): Duration in years
+
+        Throws:
+            NetimAPIException
+
+        Returns:
+            dict: StructOperationResponse
+        """
+        params = {"duration": duration}
+        return self.call("brandprotection/" + id + "/renew/", "patch", params)
+
+    def brandProtectionDelete(
+        self, id: str
+    ) -> dict:
+        """Delete a brand protection
+
+        Args:
+            id (str): Brand protection ID
+
+        Throws:
+            NetimAPIException
+
+        Returns:
+            dict: StructOperationResponse
+        """
+        return self.call("brandprotection/" + id + "/", "delete")
+
+    def brandProtectionSetPreference(
+        self, id: str, codePref: str, enable: str
+    ) -> dict:
+        """Set brand protection preference
+
+        Args:
+            id (str): Brand protection ID
+            codePref (str): Preference to update ("auto_renew", "to_be_renewed")
+            enable (str): "0" to disable, "1" to enable
+
+        Throws:
+            NetimAPIException
+
+        Returns:
+            dict: StructOperationResponse
+        """
+        params = {
+            "codePref": codePref,
+            "value": enable,
+        }
+        return self.call("brandprotection/" + id + "/preference/", "patch", params)
