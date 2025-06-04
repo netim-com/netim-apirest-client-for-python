@@ -1682,6 +1682,24 @@ class APIRest:
         """
         params = {"filters": filters}
         return self.call("ssl/list/", "post", params)
+    
+    def sslPriceList(self, product: str = "") -> dict:
+        """Returns the list of all prices for SSL products
+
+        Args:
+            product (str): SSL product ID
+
+        Throws:
+            NetimAPIException
+
+        Returns:
+            dict: array
+        """
+
+        if product:
+            return self.call("/ssl/price/" + product, "get")
+        else:
+            return self.call("ssl/price/", "get")
 
     def sslProductInfo(self, product: str) -> dict:
         """Returns informations about a SSL product
@@ -2687,6 +2705,24 @@ class APIRest:
             dict: array
         """
         return self.call("brandprotection/product/" + product + "/", "get")
+    
+    def brandProtectionPriceList(self, product: str = "") -> dict:
+        """Returns the list of all prices for brand protection products
+
+        Args:
+            product (str):Brand protection product ID
+
+        Throws:
+            NetimAPIException
+
+        Returns:
+            dict: array
+        """
+
+        if product:
+            return self.call("/brandprotection/price/" + product, "get")
+        else:
+            return self.call("brandprotection/price/", "get")
 
     def brandProtectionList(
         self, filters: dict
