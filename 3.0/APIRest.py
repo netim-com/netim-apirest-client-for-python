@@ -1399,22 +1399,6 @@ class APIRest:
 
         return self.call("domain/" + domain + "/zone/check/", "post", params)
 
-    def domainZoneList(self, domain: str) -> list:
-        """Returns all DNS records of a domain name
-
-        Args:
-            domain (str): Domain name
-
-        Throws:
-            NetimAPIException
-
-        Returns:
-            StructDomainZoneList[]: A list of StructDomainZoneList
-        """
-        domain = domain.lower()
-
-        return self.call("/domain/" + domain + "/zone/", "get")
-
     def domainMailFwdCreate(self, mailBox: str, recipients: str) -> dict:
         """Creates an email address forwarded to recipients
 
