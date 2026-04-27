@@ -1483,6 +1483,32 @@ class APIRest:
 
         return self.call("/domain/" + fqdn + "/web-forwarding/", "post", params)
 
+	def domainWebFwdUpdate(
+		self, fqdn: str, target: str, type: str, options: dict
+	) -> dict:
+		"""Updates a web forwarding
+
+		Args:
+			fqdn (str): hostname (fully qualified domain name)
+			target (str): target of the web forwarding
+			type (str): type of the web forwarding. Accepted values are: "DIRECT", "IP", "MASKED" or "PARKING"
+			options (dict): contains StructOptionsFwd : settings of the web forwarding. An array with keys: header, protocol, title, parking and https.
+
+		Throws:
+			NetimAPIException
+
+		Returns:
+			StructOperationResponse: giving information on the status of the operation
+		"""
+
+		params = {
+			"target": target,
+			"type": type.upper(),
+			"options": options,
+		}
+
+		return self.call("/domain/" + fqdn + "/web-forwarding/", "patch", params)
+
     def domainWebFwdDelete(self, fqdn: str) -> dict:
         """Removes a web forwarding
 
