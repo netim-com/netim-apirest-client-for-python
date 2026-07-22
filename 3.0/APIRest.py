@@ -60,17 +60,10 @@ class APIRest:
 
             perfs = xml.xpath("/configuration/preferences")[0]
             for item in perfs:
-                if item.text != "":
+                if item.text:
                     self.__preferences[item.tag] = item.text
 
-            if self.__preferences["lang"] is None:
-                if xml.xpath("/configuration/preferences/lang")[0].text != "":
-                    self.__preferences["lang"] = xml.xpath(
-                        "/configuration/preferences/lang"
-                    )[0].text
-                else:
-                    self.__preferences["lang"] = "EN"
-            else:
+            if not self.__preferences.get("lang"):
                 self.__preferences["lang"] = "EN"
 
         except IndexError:
@@ -114,6 +107,7 @@ class APIRest:
             dict: the result of the call of ressource with parameters param and http verb httpVerb.
         """
         httpVerb = httpVerb.lower()
+        ressource = ressource.lstrip("/")
         self.__lastRequestRessource = ressource
         self.__lastRequestParams = params
         self.__lastHttpVerb = httpVerb
@@ -171,27 +165,32 @@ class APIRest:
                 raise NetimAPIException("Unknown error")
 
             if self.__isSessionClose(ressource, httpVerb):
-                if response.status_code == 200:
+                # 401 means the session already expired: consider it closed
+                if response.status_code in (200, 401):
+                    self.__sessionID = None
                     self.__connected = False
-                elif response.status_code == 401:
-                    pass
                 else:
-                    raise NetimAPIException(result["message"])
+                    raise NetimAPIException(
+                        result.get("message", "HTTP " + str(response.status_code))
+                    )
             elif self.__isSessionOpen(ressource, httpVerb):
                 if response.status_code == 200:
                     self.__sessionID = result["access_token"]
                     self.__connected = True
                 else:
-                    raise NetimAPIException(result["message"])
+                    raise NetimAPIException(
+                        result.get("message", "HTTP " + str(response.status_code))
+                    )
             else:
                 # Code doesn't start with "2xx"
                 if response.status_code < 200 or response.status_code > 299:
                     if response.status_code == 401:
+                        self.__sessionID = None
                         self.__connected = False
                     if "message" in result:
                         raise NetimAPIException(result["message"])
                     else:
-                        raise NetimAPIException("")
+                        raise NetimAPIException("HTTP " + str(response.status_code))
 
             self.__lastResponse = result
         except NetimAPIException as exception:
@@ -236,11 +235,9 @@ class APIRest:
 
     def sessionClose(self) -> None:
         if self.__connected and self.__sessionID is not None:
+            # call() resets __sessionID/__connected on 200 and 401,
+            # and raises NetimAPIException on any other status
             self.call("session", "delete")
-            if self.__lastHttpStatus != 200:
-                raise NetimAPIException(self.__lastError)
-            else:
-                self.__sessionID = None
         self.__connected = False
 
     def sessionInfo(self) -> dict:
@@ -278,7 +275,7 @@ class APIRest:
             type (str): Setting to be modified ('lang','sync')
             value (str): New value of the Setting (lang: 'EN';'FR',sync:'0'(for asynchronous);'1'(for synchronous)).
         """
-        self.call("session/", "patch", {"type": type, "value": value})
+        self.call("session/", "patch", {"preferences": {type: value}})
 
     def hello(self) -> str:
         """Returns a welcome message
@@ -806,8 +803,9 @@ class APIRest:
         idTech: str,
         idBilling: str,
         nameservers: dict,
+        options: dict = None,
     ) -> dict:
-        """Requests the transfer (with change of domain holder) of a domain name to Netim
+        """Requests the internal transfer of a domain name from one Netim account to another
 
         Args:
             domain (str): name of the domain to transfer
@@ -816,12 +814,15 @@ class APIRest:
             idTech (str): a valid idTech
             idBilling (str): a valid idBilling
             nameservers (dict): the list of nameservers
+            options (dict, optional): additional options:
+                - type (str): "push" or "pull" (default "pull")
+                - recipient (str): ID of the recipient account (mandatory when type is "push")
 
         Throws:
             NetimAPIException
 
         See:
-            domainTransferIn API http://support.netim.com/en/wiki/DomainInternalTransfer
+            domainInternalTransfer API http://support.netim.com/en/wiki/DomainInternalTransfer
 
         Returns:
             StructOperationResponse: giving information on the status of the operation
@@ -835,6 +836,9 @@ class APIRest:
             "idBilling": idBilling,
             "nameservers": nameservers,
         }
+
+        if options is not None:
+            params["options"] = options
 
         return self.call("domain/" + domain + "/internal-transfer/", "patch", params)
 
@@ -855,7 +859,7 @@ class APIRest:
             domainRenew API  http://support.netim.com/en/wiki/DomainRenew
         """
         domain = domain.lower()
-        params = {"duration": str(duration)}
+        params = {"duration": duration}
 
         return self.call("domain/" + domain + "/renew/", "patch", params)
 
@@ -1727,7 +1731,7 @@ class APIRest:
             "duration": duration,
             "idOwner": idOwner,
             "type": type,
-            "infos": infos,
+            "info": infos,
         }
 
         return self.call("brandprotection/", "post", params)
@@ -1869,6 +1873,6 @@ class APIRest:
         """
         params = {
             "codePref": codePref,
-            "value": enable,
+            "enable": enable,
         }
         return self.call("brandprotection/" + id + "/preference/", "patch", params)
