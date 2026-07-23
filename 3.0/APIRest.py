@@ -25,6 +25,7 @@ class APIRest:
     __key = None
     __apiURL = None
     __preferences = {"lang": None}
+    __source = None
 
     __lastRequestParams = None
     __lastRequestRessource = None
@@ -131,11 +132,15 @@ class APIRest:
                     "Accept-Language": self.__preferences["lang"],
                     "Content-Type": "application/json",
                 }
+                body = {"preferences": self.__preferences}
+                if self.__source is not None:
+                    body["source"] = self.__source
+
                 response = requests.post(
                     self.__apiURL + "/session",
                     auth=(self.__name, self.__key),
                     headers=headers,
-                    data=json.dumps({"preferences": self.__preferences}),
+                    data=json.dumps(body),
                 )
                 
             else:
@@ -225,12 +230,19 @@ class APIRest:
     API FUNCTIONS
     """
 
-    def sessionOpen(self) -> None:
+    def sessionOpen(self, source: str = None) -> None:
         """Opens a session with REST
+
+        Args:
+            source (str, optional): identifier of the calling software, sent to the API.
+                Kept for automatically reopened sessions.
 
         Raises:
             NetimAPIException: if failed to connect.
         """
+        if source is not None:
+            self.__source = source
+
         self.call("session", "post")
 
     def sessionClose(self) -> None:
@@ -1168,11 +1180,12 @@ class APIRest:
         domain = domain.lower()
         return self.call("/domain/" + domain + "/claim/", "get")
 
-    def domainList(self, filters: dict) -> list:
+    def domainList(self, filters: dict, tld: str = None) -> list:
         """Returns a list of domains matching the filters
 
         Args:
             filters (dict): Domain list filters
+            tld (str, optional): restrict the list to one TLD
 
         Throws:
             NetimAPIException
@@ -1185,6 +1198,10 @@ class APIRest:
         """
 
         params = {"filters": filters}
+
+        if tld is not None:
+            params["tld"] = tld.lower()
+
         return self.call("/domains/", "post", params)
 
     def domainProductInfo(self, tld: str) -> dict:
@@ -1487,31 +1504,31 @@ class APIRest:
 
         return self.call("/domain/" + fqdn + "/web-forwarding/", "post", params)
 
-	def domainWebFwdUpdate(
-		self, fqdn: str, target: str, type: str, options: dict
-	) -> dict:
-		"""Updates a web forwarding
+    def domainWebFwdUpdate(
+        self, fqdn: str, target: str, type: str, options: dict
+    ) -> dict:
+        """Updates a web forwarding
 
-		Args:
-			fqdn (str): hostname (fully qualified domain name)
-			target (str): target of the web forwarding
-			type (str): type of the web forwarding. Accepted values are: "DIRECT", "IP", "MASKED" or "PARKING"
-			options (dict): contains StructOptionsFwd : settings of the web forwarding. An array with keys: header, protocol, title, parking and https.
+        Args:
+            fqdn (str): hostname (fully qualified domain name)
+            target (str): target of the web forwarding
+            type (str): type of the web forwarding. Accepted values are: "DIRECT", "IP", "MASKED" or "PARKING"
+            options (dict): contains StructOptionsFwd : settings of the web forwarding. An array with keys: header, protocol, title, parking and https.
 
-		Throws:
-			NetimAPIException
+        Throws:
+            NetimAPIException
 
-		Returns:
-			StructOperationResponse: giving information on the status of the operation
-		"""
+        Returns:
+            StructOperationResponse: giving information on the status of the operation
+        """
 
-		params = {
-			"target": target,
-			"type": type.upper(),
-			"options": options,
-		}
+        params = {
+            "target": target,
+            "type": type.upper(),
+            "options": options,
+        }
 
-		return self.call("/domain/" + fqdn + "/web-forwarding/", "patch", params)
+        return self.call("/domain/" + fqdn + "/web-forwarding/", "patch", params)
 
     def domainWebFwdDelete(self, fqdn: str) -> dict:
         """Removes a web forwarding
@@ -1546,7 +1563,7 @@ class APIRest:
         return self.call("/domain/" + domain + "/web-forwardings/", "get")
 
     def sslCreate(
-        self, prod: str, duration: int, CSRInfo: dict, validation: str
+        self, prod: str, duration: int, CSRInfo: dict, validation: str, idClient: str = None
     ) -> dict:
         """Creates a SSL redirection
 
@@ -1575,6 +1592,9 @@ class APIRest:
             "CSR": CSRInfo,
             "validation": validation,
         }
+
+        if idClient is not None:
+            params["idClient"] = idClient
 
         return self.call("/ssl/", "post", params)
 
@@ -1762,6 +1782,34 @@ class APIRest:
 
         return self.call("brandprotection/", "post", params)
 
+    def brandProtectionTransfer(
+        self, reg_id: str, label: str, product: str, authID: str, idOwner: str
+    ) -> dict:
+        """Request the transfer of a brand protection to Netim
+
+        Args:
+            reg_id (str): Brand protection ID at the actual registry
+            label (str): Brand main label
+            product (str): Brand protection product ID
+            authID (str): Brand protection authorization code
+            idOwner (str): ID of the owner contact
+
+        Throws:
+            NetimAPIException
+
+        Returns:
+            dict: StructOperationResponse
+        """
+        params = {
+            "reg_id": reg_id,
+            "label": label,
+            "prod": product,
+            "authID": authID,
+            "idOwner": idOwner,
+        }
+
+        return self.call("brandprotection/transfer/", "post", params)
+
     def brandProtectionInfo(
         self, id: str
     ) -> dict:
@@ -1899,6 +1947,117 @@ class APIRest:
         """
         params = {
             "codePref": codePref,
-            "enable": enable,
+            "value": enable,
         }
         return self.call("brandprotection/" + id + "/preference/", "patch", params)
+
+    """
+    SECONDARY MARKET
+    """
+
+    def SecMarketInfo(self, plateform: str, domain: str) -> dict:
+        """Returns information about a domain listed on a secondary market platform
+
+        Args:
+            plateform (str): Platform name
+            domain (str): Domain name
+
+        Throws:
+            NetimAPIException
+
+        Returns:
+            dict: StructOperationResponse
+        """
+        domain = domain.lower()
+
+        return self.call("secmarket/" + plateform + "/" + domain + "/", "get")
+
+    def SecMarketAdd(self, plateform: str, domain: str, params: dict) -> dict:
+        """Lists a domain on a secondary market platform
+
+        Args:
+            plateform (str): Platform name
+            domain (str): Domain name
+            params (dict): Listing parameters (e.g. price)
+
+        Throws:
+            NetimAPIException
+
+        Returns:
+            dict: StructOperationResponse
+        """
+        domain = domain.lower()
+
+        return self.call(
+            "secmarket/" + plateform + "/" + domain + "/", "post", {"params": params}
+        )
+
+    def SecMarketUnlink(self, plateform: str, domain: str) -> dict:
+        """Unlinks a domain from a secondary market platform
+
+        Args:
+            plateform (str): Platform name
+            domain (str): Domain name
+
+        Throws:
+            NetimAPIException
+
+        Returns:
+            dict: StructOperationResponse
+        """
+        domain = domain.lower()
+
+        return self.call("secmarket/" + plateform + "/" + domain + "/", "patch")
+
+    def SecMarketSetPrice(self, plateform: str, domain: str, params: dict) -> dict:
+        """Updates the price of a domain listed on a secondary market platform
+
+        Args:
+            plateform (str): Platform name
+            domain (str): Domain name
+            params (dict): Pricing parameters
+
+        Throws:
+            NetimAPIException
+
+        Returns:
+            dict: StructOperationResponse
+        """
+        domain = domain.lower()
+
+        return self.call(
+            "secmarket/" + plateform + "/" + domain + "/setprice/",
+            "patch",
+            {"params": params},
+        )
+
+    def SecMarketSynchro(self, plateform: str) -> dict:
+        """Synchronizes the account with a secondary market platform
+
+        Args:
+            plateform (str): Platform name
+
+        Throws:
+            NetimAPIException
+
+        Returns:
+            dict: StructOperationResponse
+        """
+        return self.call("secmarket/" + plateform + "/", "put")
+
+    def SecMarketRemove(self, plateform: str, domain: str) -> dict:
+        """Removes a domain listed on a secondary market platform
+
+        Args:
+            plateform (str): Platform name
+            domain (str): Domain name
+
+        Throws:
+            NetimAPIException
+
+        Returns:
+            dict: StructOperationResponse
+        """
+        domain = domain.lower()
+
+        return self.call("secmarket/" + plateform + "/" + domain + "/", "delete")
